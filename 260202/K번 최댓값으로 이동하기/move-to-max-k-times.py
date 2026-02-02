@@ -22,7 +22,6 @@ def find_next(R, C, val):
                 q.append((nr, nc))
                 temp_list.append([grid[nr][nc], nr, nc])
                 visited[nr][nc] = True
-    print(temp_list)
     if temp_list:
         temp_list.sort(reverse = True)
         max_value = temp_list[0][0]
@@ -33,12 +32,11 @@ def find_next(R, C, val):
             else:
                 break
         return (max_idx[0], max_idx[1], max_value)
-
     else:
         return (R, C, val)
 
 
-sample_answer = (r-1, c-1, grid[r-1][c-1])
+answer_R, answer_C, answer_val = r-1, c-1, grid[r-1][c-1]
 for _ in range(k):
-    sample_answer = find_next(sample_answer)
-print(sample_answer[0], sample_answer[1])
+    answer_R, answer_C, answer_val = find_next(answer_R, answer_C, answer_val)
+print(answer_R+1, answer_C+1)
