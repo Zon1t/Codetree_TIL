@@ -7,7 +7,7 @@ def find_max(temp_list, capacity):
     max_value = -1
     list_length = len(temp_list)
     for start in range(list_length):
-        for end in range(start, start+m):
+        for end in range(start, min(n, start+m)):
             temp_value = 0
             if sum(temp_list[start:end+1]) <= capacity:
                 for w in temp_list[start:end+1]:
@@ -36,7 +36,7 @@ max_row = []
 for each_row in weight:
     max_value = -1
     for start in range(n):
-        for end in range(start, start+m):
+        for end in range(start, min(n, start+m)):
             temp_sum = 0
             if sum(each_row[start:end+1]) <= c:
                 for w in each_row[start:end+1]:
