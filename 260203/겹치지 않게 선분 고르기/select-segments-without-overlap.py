@@ -3,7 +3,7 @@ line_list = []
 
 for _ in range(n):
     line_list.append(tuple(map(int, input().split())))
-line_list.sort()
+line_list.sort(key = lambda x: x[1])
 
 # Please write your code here.
 
