@@ -5,7 +5,7 @@ num_list = []
 length = len(expression)
 
 def backtrack(temp_list):
-    if len(temp_list) == length // 2 + 1:
+    if len(temp_list) == 6:
         num_list.append(temp_list[:])
         return
     for i in range(1, 5):
@@ -14,17 +14,16 @@ def backtrack(temp_list):
         temp_list.pop()
 backtrack([])
 
-answer = -2**31
-for num_combination in num_list:
-    temp_num = num_combination[0]
-    idx = 1
-    for iterator in expression[1::2]:
-        if iterator == '-':
-            temp_num -= num_combination[idx]
-        elif iterator == '+':
-            temp_num += num_combination[idx]
+answer_list = []
+for num_comb in num_list:
+    num_dict = {alph:num for alph, num in zip(['a', 'b', 'c', 'd', 'e', 'f'], num_comb)}
+    temp_num = num_dict[expression[0]]
+    for i in range(length//2):
+        if expression[i*2+1] == '+':
+            temp_num += num_dict[expression[2*(i+1)]]
+        elif expression[i*2+1] == '-':
+            temp_num -= num_dict[expression[2*(i+1)]]
         else:
-            temp_num *= num_combination[idx]
-        idx += 1
-    answer = max(answer, temp_num)
-print(answer)
+            temp_num *= num_dict[expression[2*(i+1)]]
+    answer_list.append(temp_num)
+print(max(answer_list))
