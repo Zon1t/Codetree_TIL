@@ -9,8 +9,9 @@ line_list.sort(key = lambda x: x[1])
 line = [False] * 1001
 count = 0
 for A, B in line_list:
-    if not line[A] and not line[B]:
-        print(A, B)
+    if sum(line[A:B+1]):
+        continue
+    else:
         for i in range(A, B+1):
             line[i] = True
         count += 1
