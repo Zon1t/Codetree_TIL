@@ -10,4 +10,5 @@ for i in range(n):
     else:
         max_cnt = cnt if max_cnt < cnt else max_cnt
         cnt = 1
+max_cnt = cnt if max_cnt < cnt else max_cnt
 print(max_cnt)
