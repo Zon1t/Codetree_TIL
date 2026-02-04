@@ -17,6 +17,7 @@ maxx = 0
 miny = 2000
 maxy = 0
 
+is_find = False
 for x in range(2001):
     for y in range(2001):
         if plane[x][y]:
@@ -24,5 +25,8 @@ for x in range(2001):
             maxx = max(maxx, x)
             miny = min(miny, y)
             maxy = max(maxy, y)
-
-print((maxx-minx+1)*(maxy-miny+1))
+            is_find = True
+if is_find:
+    print((maxx-minx+1)*(maxy-miny+1))
+else:
+    print(0)
