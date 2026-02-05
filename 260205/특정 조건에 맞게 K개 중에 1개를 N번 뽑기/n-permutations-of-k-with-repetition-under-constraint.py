@@ -10,14 +10,13 @@ def find_3(temp_list):
             cnt += 1
         else:
             max_cnt = max_cnt if cnt < max_cnt else cnt
+            cnt = 1
     max_cnt = max_cnt if cnt < max_cnt else cnt
-    return max_cnt >= 3
+    return (max_cnt >= 3)
 
 def backtrack(temp_list):
     if len(temp_list) == N:
-        if find_3(temp_list):
-            pass
-        else:
+        if not find_3(temp_list):
             print(*(temp_list))
         return
     for i in range(1, 1+K):
