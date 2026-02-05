@@ -9,8 +9,9 @@ def find_bigger(row, col):
     dr, dc = direction_dict[move_dir[row][col]]
     possible_list = []
     nr, nc = row + dr, col + dc
-    while 0 <= nr < n and 0 <= nc < c and num[row][col] < num[nr][nc]:
-        possible_list.append((nr, nc))
+    while 0 <= nr < n and 0 <= nc < c:
+        if num[row][col] < num[nr][nc]:
+            possible_list.append((nr, nc))
         nr += dr
         nc += dc
     return possible_list
@@ -37,7 +38,5 @@ direction_dict = {
     8 : [-1, -1]
 }
 max_cnt = 0
-for row in range(n):
-    for col in range(n):
-        backtrack(row, col, 1)
+backtrack(r-1, c-1, 0)
 print(max_cnt)
