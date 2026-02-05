@@ -19,6 +19,7 @@ def find_bigger(row, col):
 def backtrack(row, col, count):
     global max_cnt
     possible_list = find_bigger(row, col)
+    print(possible_list)
 
     if not possible_list:
         max_cnt = count if max_cnt < count else max_cnt
