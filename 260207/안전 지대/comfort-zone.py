@@ -19,7 +19,7 @@ def find_safe_zone(row, col):
                 visited[nr][nc] = True
 
 max_count = 0
-max_count_height = 0
+max_count_height = 1
 
 for h in range(1, 101):
     for row in range(n):
