@@ -9,4 +9,4 @@ for i in range(1, n):
 for row in range(1, n):
     for col in range(1, n):
         grid[row][col] += max(grid[row-1][col], grid[row][col-1])
-print(grid[-1][])
+print(grid[-1][-1])
