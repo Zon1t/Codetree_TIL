@@ -28,6 +28,7 @@ def update(row, col, start):
                 else:
                     if answer[r][c] >= answer[nr][nc]:
                         update(nr, nc, d+1)
+                        break
 
 answer = [[0]*n for _ in range(n)]
 for row in range(n):
