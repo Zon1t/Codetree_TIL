@@ -13,5 +13,4 @@ for i in range(1, n):
     dp[i] = max_jump
     if arr[i] != 0 and dp[i] == 0:
         break
-print(dp)
 print(max(dp))
