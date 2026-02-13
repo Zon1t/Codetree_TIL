@@ -4,6 +4,7 @@ coins = list(map(int, input().split()))
 # Please write your code here.
 
 import sys
+sys.setrecursionlimit(10000)
 INT_MAX = sys.maxsize
 
 memo = [-1] * (M+1)
