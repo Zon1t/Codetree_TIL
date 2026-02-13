@@ -4,15 +4,14 @@ A = list(map(int, input().split()))
 # Please write your code here.
 
 import sys
-INT_MAX = sys.maxsize
+INT_MAX = 101
 
 dp = [INT_MAX] * (m+1)
 dp[0] = 0
 
 for number in A:
-    for i in range(m, -1, -1):
-        if dp[i] != INT_MAX and i+number <= m:
-            dp[i+number] = min(dp[i]+1, dp[i+number])
+    for i in range(m, number-1, -1):
+        dp[i] = min(dp[i-number]+1, dp[i])
 
 if dp[m] == INT_MAX:
     print(-1)
