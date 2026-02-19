@@ -11,4 +11,4 @@ for coin in coins:
             dp[coin] = max(1, dp[coin])
             if dp[i-coin] != 0:
                 dp[i] = max(dp[i-coin]+1, dp[i])
-print(dp[M])
+print(dp[M] if dp[M] != 0 else -1)
