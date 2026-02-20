@@ -6,7 +6,7 @@ w, v = list(w), list(v)
 
 dp = [[0] * (M+1) for _ in range(N)]
 for i in range(N):
-    for j in range(1, M+1):
+    for j in range(M, 0, -1):
         if w[i] <= j:
             dp[i][j] = max(dp[i-1][j-w[i]] + v[i], dp[i][j-1], dp[i-1][j])
         else:
