@@ -22,4 +22,7 @@ while start < end:
         start = mid + 1
     else:
         end = mid
-print(start)
+if dp[-1] < M:
+    print(-1)
+else:
+    print(start)
