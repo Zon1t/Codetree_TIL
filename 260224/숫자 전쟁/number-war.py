@@ -4,10 +4,13 @@ second_cards = list(map(int, input().split()))
 
 # Please write your code here.
 
-dp = [[0]*(n+1) for _ in range(n+1)]
+dp = [[-1]*(n+1) for _ in range(n+1)]
+dp[0][0] = 0
 
 for i in range(n):
     for j in range(n):
+        if dp[i][j] == -1:
+            continue
         dp[i+1][j+1] = max(dp[i][j], dp[i+1][j+1])
         if first_cards[i] > second_cards[j]:
             dp[i][j+1] = max(dp[i][j] + second_cards[j], dp[i][j+1])
