@@ -4,7 +4,7 @@ words = [input() for _ in range(n)]
 # Please write your code here.
 
 cnt_dict = dict()
-max_cnt = 0
+max_cnt = 1
 
 for word in words:
     if word in cnt_dict:
