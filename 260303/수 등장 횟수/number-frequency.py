@@ -4,10 +4,13 @@ nums = list(map(int, input().split()))
 
 # Please write your code here.
 
-cnt_arr = [0] * 100001
+cnt_dict = dict()
 
 for num in arr:
-    cnt_arr[num] += 1
+    if cnt_dict.get(num):
+        cnt_dict[num] += 1
+    else:
+        cnt_dict[num] = 1
 
 for num in nums:
-    print(cnt_arr[num], end=' ')
+    print(cnt_dict[num] if cnt_dict.get(num) else 0, end = ' ')
