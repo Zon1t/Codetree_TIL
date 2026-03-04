@@ -7,6 +7,8 @@ graph = [[] for _ in range(N+1)]
 for _ in range(M):
     e, s, w = map(int, input().split())
     graph[s].append((e, w))
+    graph[e].append((s, w))
+
 
 end, start = map(int, input().split())
 distance = [MAX_VALUE]*(N+1)
