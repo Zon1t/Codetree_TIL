@@ -1,57 +1,84 @@
-n, k, m = map(int, input().split())
-
-grid = [list(map(int, input().split())) for _ in range(n)]
-
-start_points = []
-
-for _ in range(k):
-    ri, ci = map(int, input().split())
-    start_points.append((ri-1, ci-1))
-
-# Please write your code here.
-
+from itertools import combinations
 from collections import deque
+
+N, K, M = map(int, input().split())
+
+grid = [list(map(int, input().split())) for _ in range(N)]
+start_points = []
+for _ in range(K):
+    row, col = map(int, input().split())
+    start_points.append((row-1, col-1))
+
+stones = []
+for row in range(N):
+    for col in range(N):
+        if grid[row][col] == 1:
+            stones.append((row, col))
+
+max_count = 0
 
 dr = [0, 1, 0, -1]
 dc = [1, 0, -1, 0]
 
-def select_rock_pos(start, temp_list):
-    if len(temp_list) == m:
-        rock_comb_list.append(temp_list[:])
-        return
-    for i in range(start, len(rock_pos)):
-        temp_list.append(rock_pos[i])
-        select_rock_pos(i+1, temp_list)
-        temp_list.pop()
+def in_range(row, col):
+    return (0 <= row < N and 0 <= col < N)
 
-def count_possible_area(rock_comb, start_points):
-    visited = [[False]*n for _ in range(n)]
-    q = deque(start_points)
-    for r, c in start_points:
-        visited[r][c] = True
-    s = 0
-
+def count_area():
+    global start_points
+    count = 0
+    visited = [[False]*N for _ in range(N)]
+    for row, col in start_points:
+        visited[row][col] = True
+    q = deque(start_points[:])
     while q:
-        r, c = q.popleft()
-        s += 1
+        row, col = q.popleft()
+        count += 1
         for i in range(4):
-            nr, nc = r+dr[i], c+dc[i]
-            if 0 <= nr < n and 0 <= nc < n and not visited[nr][nc]:
-                if grid[nr][nc] == 0 or (nr, nc) in rock_comb:
-                    q.append((nr, nc))
-                    visited[nr][nc] = True
-    return s
+            nr, nc = row+dr[i], col+dc[i]
+            if not in_range(nr, nc):
+                continue
+            if visited[nr][nc] or grid[nr][nc]:
+                continue
+            visited[nr][nc] = True
+            q.append((nr, nc))
+    return count
 
-rock_pos = []
-for row in range(n):
-    for col in range(n):
-        if grid[row][col] == 1:
-            rock_pos.append((row, col))
+def backtrack(cnt, start):
+    global max_count, length
+    if cnt == M:
+        max_count = max(max_count, count_area())
+        return
+    for i in range(start, length):
+        row, col = stones[i]
+        grid[row][col] = 0
+        backtrack(cnt+1, i+1)
+        grid[row][col] = 1
 
-max_count = 0
-rock_comb_list = []
-select_rock_pos(0, [])
-for rock_comb in rock_comb_list:
-    count = count_possible_area(rock_comb, start_points)
-    max_count = count if max_count < count else max_count
+length = len(stones)
+backtrack(0, 0)
 print(max_count)
+
+# def in_range(row, col):
+#     return (0 <= row < N and 0 <= col < N)
+
+# for stone_comb in combinations(stones, M):
+#     count = 0
+#     visited = [[False]*N for _ in range(N)]
+#     for row, col in start_points:
+#         visited[row][col] = True
+#     q = deque(start_points)
+#     while q:
+#         row, col = q.popleft()
+#         count += 1
+#         for i in range(4):
+#             nr, nc = row+dr[i], col+dc[i]
+#             if not in_range(nr, nc):
+#                 continue
+#             if visited[nr][nc]:
+#                 continue
+#             if grid[nr][nc] == 0 or (nr, nc) in stone_comb:
+#                 visited[nr][nc] = True
+#                 q.append((nr, nc))
+#     max_count = max(max_count, count)
+
+# print(max_count)
