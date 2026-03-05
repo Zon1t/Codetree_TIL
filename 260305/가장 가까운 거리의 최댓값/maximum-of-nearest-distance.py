@@ -31,11 +31,13 @@ def dijkstra(start):
             if next_dist < distances[next_node]:
                 distances[next_node] = next_dist
                 heapq.heappush(Q, (next_dist, next_node))
-    return min(distances[A], distances[B], distances[C])
+    return distances
+
+distance_list = []
+for node in [A, B, C]:
+    distance_list.append(dijkstra(node))
 
 for node in data_node:
-    total = dijkstra(node)
-    if total == MAX_VALUE:
-        continue
-    answer = max(answer, total)
+    curr_min = min(distance_list[0][node], distance_list[1][node], distance_list[2][node])
+    answer = max(answer, curr_min)
 print(answer)
