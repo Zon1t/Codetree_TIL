@@ -31,7 +31,5 @@ dijkstra(X, dist_X, data)
 dijkstra(X, dist_inv_X, data_inv)
 
 for i in range(1, N+1):
-    if i == X:
-        continue
     ans = max(ans, dist_X[i] + dist_inv_X[i])
 print(ans)
