@@ -14,7 +14,7 @@ def dijkstra(start):
         for j in range(1, N+1):
             if visited[j]:
                 continue
-            if min_idx == -1 or distances[min_idx] < distances[j]:
+            if min_idx == -1 or distances[j] < distances[min_idx]:
                 min_idx = j
         visited[min_idx] = True
         for j in range(1, N+1):
@@ -29,18 +29,18 @@ visited = [False] * (N+1)
 dijkstra(1)
 
 track = []
-def backtrack(now_node, temp_list):
+def backtrack(now_node, now_distance, temp_list):
     if now_node == 1:
         track.append(temp_list[::-1])
         return
     for j in range(1, N+1):
         if data[now_node][j] == 0:
             continue
-        if distances[j] + data[now_node][j] == distances[now_node]:
+        if now_distance - data[now_node][j] == distances[j]:
             temp_list.append(j)
-            backtrack(j, temp_list)
+            backtrack(j, now_distance - data[now_node][j], temp_list)
             temp_list.pop()
-backtrack(N, [])
+backtrack(N, distances[N], [N])
 track.sort()
 real_track = track[0]
 for i in range(len(real_track)-1):
@@ -50,4 +50,4 @@ for i in range(len(real_track)-1):
 distances = [MAX_VALUE] * (N+1)
 visited = [False] * (N+1)
 dijkstra(1)
-print(distances[N])
+print(distances[N] if distances[N] != MAX_VALUE else -1)
