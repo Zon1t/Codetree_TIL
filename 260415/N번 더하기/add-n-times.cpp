@@ -7,10 +7,9 @@ int main() {
     cin >> start >> delta;
 
     int i;
-    int temp = start;
     for (i = 0; i < delta; i++) {
-        temp += delta;
-        cout << temp << endl;
+        start += delta;
+        cout << start << endl;
     }
     return 0;
 }
