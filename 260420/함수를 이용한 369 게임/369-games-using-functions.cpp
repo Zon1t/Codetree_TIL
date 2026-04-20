@@ -1,0 +1,32 @@
+#include <iostream>
+using namespace std;
+
+int can_divide_3(int n) {
+    if (n%3 == 0) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+int is_in_369(int n) {
+    string temp = itos(n);
+    if (("3" in temp) || ("6" in temp) || ("9" in temp)) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+int main() {
+    int start, end, cnt = 0;
+    cin >> start >> end;
+
+    for (int i=start; i <= end; i++) {
+        if (can_divide_3(i) || is_in_369(i)) {
+            cnt += 1;
+        }
+    }
+    cout << cnt << endl;
+    return 0;
+}
