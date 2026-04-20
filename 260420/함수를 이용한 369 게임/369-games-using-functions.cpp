@@ -10,12 +10,14 @@ int can_divide_3(int n) {
 }
 
 int is_in_369(int n) {
-    string temp = itos(n);
-    if (("3" in temp) || ("6" in temp) || ("9" in temp)) {
-        return true;
-    } else {
-        return false;
+    while (n > 0) {
+        int digit = n%10;
+        if (digit == 3 || digit == 6 || digit == 9) {
+            return true;
+        }
+        n /= 10;
     }
+    return false;
 }
 
 int main() {
