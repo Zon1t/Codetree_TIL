@@ -18,14 +18,14 @@ int main()
 		v[i].second = i + 1;
 	}
 
-	sort(v.begin(), v.end(), cmp);
+	stable_sort(v.begin(), v.end(), cmp);
+	
+	vector<int> answer(N + 1);
 	for (int i = 0; i < N; i++) {
-		v[i].first = v[i].second;
-		v[i].second = i + 1;
+		answer[v[i].second] = i + 1;
 	}
 
-	sort(v.begin(), v.end(), cmp);
-	for (int i = 0; i < N; i++) {
-		cout << v[i].second << " ";
+	for (int i = 1; i <= N; i++) {
+		cout << answer[i] << " ";
 	}
 }
