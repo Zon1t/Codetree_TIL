@@ -31,7 +31,7 @@ int main() {
 	cin >> n >> m;
 	
 	vector<vector<tuple<int, int>>> deltas;
-	for (int k = 0; k < n; k++) {
+	for (int k = 0; k <= n; k++) {
 		deltas.push_back(make_rh(k));
 	}
 
@@ -45,7 +45,7 @@ int main() {
 	int max_gold = 0, curr_gold, cost, curr_row, curr_col;
 	for (int i = 0; i < n; i++) {
 		for (int j = 0; j < n; j++) {
-			for (int k = 0; k < n; k++) {
+			for (int k = 0; k <= n; k++) {
 				curr_gold = 0;
 				cost = 2 * k*k + 2 * k + 1;
 				vector<tuple<int, int>> delta = deltas[k];
