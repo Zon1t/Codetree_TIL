@@ -1,3 +1,5 @@
+# 실험 코드
+
 # 방화벽은 영역에 포함되지 않음.
 # 빈칸의 수도 3이상, n, m도 그닥 크지 않아서 완탐하면 될 것 같다.
 # 정확히 3개를 설치한다고 하니, 그보다 적게 설치하는 경우에 대해서는 생각 X
@@ -13,9 +15,6 @@ from collections import deque
 dr = [0, 1, 0, -1]
 dc = [1, 0, -1, 0]
 
-def in_range(row, col):
-    return 0 <= row < N and 0 <= col < M
-
 def bfs():
     # 초기 세팅
     visited = [[False] * M for _ in range(N)]
@@ -25,17 +24,15 @@ def bfs():
         Q.append((row, col))
 
     # 불이 나올 때마다 -= 1 해줄 것이므로 초기 불 개수만큼 추가. 더불어 3개는 설치했으니 -3 해주기
-    now = empty+fire_cnt-3
+    now = empty
 
     while Q:
         curr_row, curr_col = Q.popleft()
-        # 불이 퍼지지 않는 영역 줄이기
-        now -= 1
         for d in range(4):
             next_row, next_col = curr_row + dr[d], curr_col + dc[d]
 
             # 범위에서 벗어나면 패스
-            if not in_range(next_row, next_col):
+            if next_row < 0 or next_col < 0 or next_row >= N or next_col >= M:
                 continue
             # 이미 불이 번졌거나 방화벽이 있으면 패스
             if visited[next_row][next_col] or grid[next_row][next_col] == 1:
@@ -43,6 +40,7 @@ def bfs():
 
             # 방문처리 및 큐에 추가
             visited[next_row][next_col] = True
+            now -= 1
             Q.append((next_row, next_col))
 
     # 안전 영역의 수를 반환
@@ -53,7 +51,7 @@ N, M = map(int, input().split())
 grid = [list(map(int, input().split())) for _ in range(N)]
 
 fire_lst, can_put = [], []
-empty = 0
+empty = -3
 for row in range(N):
     for col in range(M):
         if grid[row][col] == 2:
