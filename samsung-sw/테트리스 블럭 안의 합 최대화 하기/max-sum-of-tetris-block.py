@@ -29,10 +29,10 @@ answer = 0
 
 for row in range(N):
     for col in range(M):
-        for deltas in blocks:
+        for i in range(19):
             temp = 0
-            for dr, dc in deltas:
-                nr, nc = row + dr, col + dc
+            for j in range(4):
+                nr, nc = row + blocks[i][j][0], col + blocks[i][j][1]
                 
                 # 벗어나면 해당 deltas는 현재 위치에서 사용할 수 없음.
                 if nr < 0 or nr >= N or nc < 0 or nc >= M:
