@@ -7,8 +7,7 @@ def kill_check(cur, cur_Lv):
     # (거리, x좌표, y좌표)
     heappush(q, (0, cur))
 
-    visited = 0
-    visited |= 1<<cur
+    visited = 1<<cur
 
     while q:
         dist, now = heappop(q)
@@ -41,6 +40,7 @@ for j, val in enumerate(matrix):
     if val == 9:
         cur = j
         matrix[j] = 0 # 이거 안해주면 나중에 못감
+        break
 
 cur_Lv = 2
 cur_exp = 0
