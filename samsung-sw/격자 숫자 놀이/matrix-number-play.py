@@ -1,3 +1,7 @@
+'''
+애초에 100보다 커지는 경우는 존재하지 않는다. ??
+'''
+
 # 배열의 크기가 변하게 된다. 행이 열의 개수보다 크거나 같을 때 / 작을 때 다른 방식으로 연산 수행
 # + 100 넘어가면 격자 버리기 잘 처리하기.
 # 격자가 지칭하는 바 1행 1열부터 시작함에 유의하자.
@@ -40,9 +44,9 @@ def simulate():
         for idx in range(N):
             if rows[idx] < max_row:
                 new_grid[idx] += [0] * (max_row - rows[idx])
-        grid = new_grid
 
         M = max_row
+
     else:
         cols = []
         for col in range(M):
@@ -75,15 +79,12 @@ def simulate():
                 new_grid[idx] += [0] * (max_col - cols[idx])
 
         new_grid = [row for row in zip(*new_grid)]
-        grid = new_grid
 
         N = max_col
 
-def update():
-    global grid
-    new_N, new_M = N%100, M%100
-    grid = [row[(100 if M > 100 else 0):] for row in grid[(100 if N > 100 else 0):]]
-    return new_N, new_M
+    for r in range(N):
+        for c in range(M):
+            grid[r][c] = new_grid[r][c]
 
 def check():
     return target_r < N and target_c < M and grid[target_r][target_c] == k
@@ -92,22 +93,24 @@ def check():
 # 입력 처리
 target_r, target_c, k = map(int, input().split())
 target_r, target_c = target_r-1, target_c-1
-grid = [list(map(int, input().split())) for _ in range(3)]
+
+grid = [[0] * 100 for _ in range(100)]
+for i in range(3):
+    temp_row = list(map(int, input().split()))
+    for j in range(3):
+        grid[i][j] = temp_row[j]
 
 N, M = 3, 3
-# 에지? 시작하자마자 끝나는 경우
+# 에지 케이스? 시작하자마자 끝나는 경우
 if check():
     print(0)
 else:
     # 주어진 시간만큼 시뮬레이션 수행
     for time in range(1, 101):
-        # 규칙 적용
+        # 1. 규칙 적용
         simulate()
 
-        # grid 업데이트
-        update()
-
-        # 종료 체크
+        # 2. 종료 체크
         if check():
             print(time)
             break
