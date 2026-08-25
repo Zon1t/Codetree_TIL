@@ -12,79 +12,43 @@ temp = dict()
 def simulate():
     global grid, N, M
 
-    new_grid = []
+    need = False
     # 중복되는 것 같은데 다른 방법론 없을라나
-    if N >= M:
-        rows = []
-        for row in range(N):
-            temp.clear()
+    if N < M:
+        grid = [row[:] for row in zip(*grid)]
+        N, M = M, N
+        need = True
 
-            for col in range(M):
-                if grid[row][col] == 0:
-                    continue
+    max_row = 0
+    for row in range(N):
+        temp.clear()
 
-                if grid[row][col] in temp:
-                    temp[grid[row][col]] += 1
-                else:
-                    temp[grid[row][col]] = 1
+        for col in range(M):
+            if grid[row][col] == 0:
+                continue
 
-            lst = []
-            for key, value in temp.items():
-                lst.append((value, key))
-            lst.sort()
+            if grid[row][col] in temp:
+                temp[grid[row][col]] += 1
+            else:
+                temp[grid[row][col]] = 1
 
-            new_row = []
-            for val, k in lst:
-                new_row.extend([k, val])
+        lst, cnt = [], 0
+        for key, value in temp.items():
+            lst.append((value, key))
+            cnt += 1
+        lst.sort()
 
-            rows.append(len(new_row))
-            new_grid.append(new_row)
+        max_row = max(cnt*2, max_row)
+        grid[row] = [0] * 100
+        for idx, (v, k) in enumerate(lst):
+            grid[row][idx*2], grid[row][idx*2+1] = k, v
 
-        max_row = max(rows)
-        for idx in range(N):
-            if rows[idx] < max_row:
-                new_grid[idx] += [0] * (max_row - rows[idx])
-
+    if need:
+        N, M = max_row, N
+        grid = [row[:] for row in zip(*grid)]
+    else:
         M = max_row
 
-    else:
-        cols = []
-        for col in range(M):
-            temp.clear()
-
-            for row in range(N):
-                if grid[row][col] == 0:
-                    continue
-
-                if grid[row][col] in temp:
-                    temp[grid[row][col]] += 1
-                else:
-                    temp[grid[row][col]] = 1
-
-            lst = []
-            for key, value in temp.items():
-                lst.append((value, key))
-            lst.sort()
-
-            new_col = []
-            for val, k in lst:
-                new_col.extend([k, val])
-
-            cols.append(len(new_col))
-            new_grid.append(new_col)
-
-        max_col = max(cols)
-        for idx in range(M):
-            if cols[idx] < max_col:
-                new_grid[idx] += [0] * (max_col - cols[idx])
-
-        new_grid = [row for row in zip(*new_grid)]
-
-        N = max_col
-
-    for r in range(N):
-        for c in range(M):
-            grid[r][c] = new_grid[r][c]
 
 def check():
     return target_r < N and target_c < M and grid[target_r][target_c] == k
