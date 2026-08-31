@@ -56,33 +56,28 @@ def rotate(x, d, k):
 
 # 해당 로직이 중요하다.
 def check():
-    global pan
-
     need_scaling = True
     erase_set = set()
-    for pan_idx in range(N):
+    # 판과 판 사이 위 아래로 인접한지 체크하기
+    for pan_idx in range(N-1):
         for num_idx in range(M):
-            # 양 옆으로 인접한지 체크하기.
-            if pan[pan_idx][num_idx] == pan[pan_idx][num_idx-1] and not erase_grid[pan_idx][num_idx] and not erase_grid[pan_idx][num_idx-1]:
-                erase_set.add((pan_idx, num_idx))
-                erase_set.add((pan_idx, num_idx-1))
-                need_scaling = False
-            
-            if pan_idx == N-1:
-                continue
-
-            # 판과 판 사이 위 아래로 인접한지 체크하기
             first_num_idx, second_num_idx = (pointers[pan_idx]+num_idx)%M, (pointers[pan_idx+1]+num_idx)%M
-            if pan[pan_idx][first_num_idx] == pan[pan_idx+1][second_num_idx] and not erase_grid[pan_idx][first_num_idx] and not erase_grid[pan_idx+1][second_num_idx]:
+            if pan[pan_idx][first_num_idx] == pan[pan_idx+1][second_num_idx] and pan[pan_idx][first_num_idx]:
                 erase_set.add((pan_idx, first_num_idx))
                 erase_set.add((pan_idx+1, second_num_idx))
                 need_scaling = False
 
-    # 한 번에 지워야 함.
-    for pan_idx, num_idx in erase_set:
-        erase_grid[pan_idx][num_idx] = True
+    # 양 옆으로 인접한지 체크하기.
+    for pan_idx in range(N):
+        for num_idx in range(M):
+            if pan[pan_idx][num_idx] == pan[pan_idx][num_idx-1] and pan[pan_idx][num_idx]:
+                erase_set.add((pan_idx, num_idx))
+                erase_set.add((pan_idx, num_idx-1))
+                need_scaling = False
 
-    # 필요 변수 반환
+    for pan_idx, num_idx in erase_set:
+        pan[pan_idx][num_idx] = 0
+
     return need_scaling
 
 
@@ -91,7 +86,7 @@ def standard_scale():
     cnt = 0
     for pan_idx in range(N):
         for num_idx in range(M):
-            if erase_grid[pan_idx][num_idx]:
+            if not pan[pan_idx][num_idx]:
                 continue
             total += pan[pan_idx][num_idx]
             cnt += 1
@@ -101,7 +96,7 @@ def standard_scale():
         avg = total // cnt
         for pan_idx in range(N):
             for num_idx in range(M):
-                if erase_grid[pan_idx][num_idx]:
+                if not pan[pan_idx][num_idx]:
                     continue
 
                 if pan[pan_idx][num_idx] > avg:
@@ -114,26 +109,19 @@ def calc_answer():
     temp = 0
     for pan_idx in range(N):
         for num_idx in range(M):
-            if erase_grid[pan_idx][num_idx]:
-                continue
             temp += pan[pan_idx][num_idx]
     return temp
 
-# def custom_print():
-#     print(f'-------rotate_result---------')
-#     for pan_idx in range(N):
-#         print(pan[pan_idx][pointers[pan_idx]:]+pan[pan_idx][:pointers[pan_idx]])
-#     print(f'-------erase_result----------')
-#     for pan_idx in range(N):
-#         print(erase_grid[pan_idx][pointers[pan_idx]:] + erase_grid[pan_idx][:pointers[pan_idx]])
-
+def custom_print():
+    print(f'-------result---------')
+    for pan_idx in range(N):
+        print(pan[pan_idx][pointers[pan_idx]:]+pan[pan_idx][:pointers[pan_idx]])
 
 N, M, Q = map(int, input().split())
 pan = [list(map(int, input().split())) for _ in range(N)]
 
 # 필요 배열 선언.
 pointers = [0] * N
-erase_grid = [[False] * M for _ in range(N)]
 
 for _ in range(Q):
     # 0. 명령 정보 입력받기.
