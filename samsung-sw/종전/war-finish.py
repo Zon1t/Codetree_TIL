@@ -1,150 +1,86 @@
+''' 종전 / 20260831 / 체감 난이도 : 골드 3
+소요 시간 : 75분 / 시도 : 1회 / 실행 시간 : 299ms / 메모리 : 23MB
+
+타임 라인 : 구상 및 틀 만들기(30분) - 구현(25분) - 검증 및 수정(20분)
+
+
+[구상]
+    - 직사각형을 만드는 방법론으로 처음에는 백트래킹이 우선적으로 생각이 났던 것 같다. 근데 그걸 쓰기보단
+    사이즈가 주어지니 step을 각각 정의해서 꼭짓점의 좌표를 쓰는 편이 좋다고 생각했다. 인구 수 연산에 필연
+    적으로 쓰일 것이라 생각했기 때문이다.
+    - 이후 인구수를 각 그룹별로 어떻게 해줄까에 대해서 가장 많은 시간을 할애했던 것 같다. 손으로 조금 그려
+    보니, 부등식 개념이 떠올라서 직선의 방정식을 정의해 문제를 해결하고자 했다. 전체적인 틀을 만들어 가면서
+    조금 더 구현할 부분들을 명확하게 떠올려보았다.
+
+[구현]
+    - 직선의 방정식 만드는 공식을 바탕으로 두 점의 좌표가 주어졌을 때, 해당 두 점을 지나는 직선의 방정식을
+    반환하는 함수를 만들었다.
+    - 각 영역별 range를 적절하게 주고, 대소 관계만 적절하게 준다면 연산이 원활하게 될 것으로 생각했다. 이때
+    grid는 뒤집혀 있다는 점을 확실하게 인지하고 range를 적절하게 주기 위해 신경을 많이 썼다.
+
+[검증]
+    - 검증할 때는 처음엔 로직이 실행될 때마다 결과값을 찍어보았는데, 가독성이 너무 떨어져서 정답이 업데이트
+    되는 순간만 출력해보았다.
+    - 몇몇 테케에서 정답이 안나왔었는데, 다른 로직은 다 맞았었는데 꼭짓점 연산하는 부분이 일부 지워져있는 것을
+    발견하고 해당 부분을 채워주었다. 매번 시작 지점, step 변수들, calc결과를 찍어보며 비교하니 내가 틀린
+    부분을 추적하는 게 비교적 쉬웠던 것 같다.
+    - 혹시 빼먹은 부분이 없을까 문제를 한 번 더 읽어보고, 코드에 잘 반영되었다고 생각한 순간 제출했다.
+'''
+
+# 직사각형에 대한 구상 -> 만들 수 있는 직사각형의 사이즈는 정해져있다. 해당 위치에 의거하여 각각
+# 대각으로 몇 칸을 갈 수 있는가에 대한 연산이 필요하다. 영역별 합을 구하는 로직에 대해서는 조금 더 생각해볼
+# 필요가 있을 것으로 보인다.
+# 진행 로직 : 1. 직사각형의 양 끝 꼭짓점의 좌표를 구하기
+#           2. 영역별 인구수 연산
+#           3. min, max 차이 연산
+# 하드코딩이 많이 필요해보이는데 너무 고민하기보단 기세로 밀고가보자.
+
 def in_range(row, col):
     return 0 <= row < N and 0 <= col < N
 
-def cal(arr):
-    # sort 해서 위의 꼭지점, 아래 꼭지점 세기만 세면 안될거같은데
+def calc_members(standard_point):
+    # 이래도 되는건가 싶지만 직선의 방정식 쓰면 되지 않나?
+    # 기울기가 1 혹은 -1이라 굳이 안 써도 된다.
+    return_lst = [0, 0, 0, 0]
 
-    # 제일 r이 작은거 제일 c가 작은거
-    start_r  = int(1e9)
-    start_c = 0
-    end_r = int(-1e9)
-    end_c = 0
+    threshold = standard_point[0][0] + standard_point[0][1]
+    # 우하단
+    for row in range(standard_point[1][0]+1, N):
+        for col in range(standard_point[0][1], N):
+            if threshold < row + col:
+                return_lst[3] += grid[row][col]
 
-    left_c =  int(1e9)
-    left_r = 0
-    right_c = int(-1e9)
-    right_r = 0
+    # 우상단
+    threshold = standard_point[1][0] - standard_point[1][1]
+    for row in range(standard_point[1][0]+1):
+        for col in range(standard_point[2][1]+1, N):
+            if row - col < threshold:
+                return_lst[1] += grid[row][col]
 
-    for r,c in arr:
-        if start_r > r:
-            start_r = r
-            start_c = c
-        if end_r < r:
-            end_r = r
-            end_c = c
+    # 좌상단
+    threshold = standard_point[2][0] + standard_point[2][1]
+    for row in range(standard_point[3][0]):
+        for col in range(standard_point[2][1]+1):
+            if threshold > row + col:
+                return_lst[0] += grid[row][col]
 
+    # 좌하단
+    threshold = standard_point[3][0] - standard_point[3][1]
+    for row in range(standard_point[3][0], N):
+        for col in range(standard_point[0][1]):
+            if row - col > threshold:
+                return_lst[2] += grid[row][col]
 
-        if left_c > c:
-            left_r = r
-            left_c = c
+    return return_lst
 
-        if right_c < c:
-            right_c = c
-            right_r = r
-
-    visited = [[0] * N for _ in range(N)]
-
-    # 1번 부족 경계값 체크하기
-    for (r,c) in arr:
-        visited[r][c] = 1 # 다 표시해놓기
-
-    sum_people = [0] * 6
-
-    for i in range(start_r):
-        for j in range(start_c+1):
-            sum_people[2] += people[i][j]
-        for j in range(start_c+1, N):
-            sum_people[3] += people[i][j]
-
-    # 끝 지점이라면
-    for i in range(end_r+1, N):
-        for j in range(end_c):
-            sum_people[4] += people[i][j]
-        for j in range(end_c, N):
-            sum_people[5] += people[i][j]
-
-    for i in range(start_r, end_r+1):
-        target = 0
-        is_check = False
-        is_five = False
-        # 왼쪽이 더 큰 경우
-        if left_r > right_r:
-            # 그러면 구간은 sr ~ rr , rr~ lr ,lr~er 이다.
-            if start_r <= i <= right_r:
-                target = 2
-            elif right_r <= i <= left_r:
-                target = 4
-                is_five = True # 5로 늘릴 예정
-
-            elif left_r <= i <= end_r:
-                target = 4
-
-        elif right_r > left_r:
-            if start_r <= i < left_r:
-                target = 2
-            elif left_r<= i <= right_r:
-                target = 4
-                is_check = True # 3으로 줄여야 한다.
-            elif right_r <= i <= end_r:
-                target = 4
-
-        elif right_r == left_r:
-            if start_r <= i < left_r:
-                target = 2
-            elif i == right_r:
-                is_check = True
-                target = 4
-            elif right_r <= i <= end_r:
-                target = 4
-
-        is_one = False
-        is_pass = False
-        need_skip = False
-        for j in range(N):
-            if need_skip:
-                need_skip = False
-                if visited[i][j] == 0:
-                    if is_one:
-                        if is_five:
-                            sum_people[target+1] += people[i][j]
-                        elif is_check:
-                            sum_people[target-1] += people[i][j]
-                        else:
-                            sum_people[target+1] += people[i][j]
-                    else:
-                        sum_people[target] += people[i][j]
-                elif visited[i][j] == 1:
-                    is_one = True
-                    is_pass = True
-                continue
-            if is_pass:
-                if i == start_r or i == end_r:
-                    is_pass = False
-                elif visited[i][j] == 1:
-                    is_pass = False
-                    need_skip = True
-                    continue
-                else: # 0일 때는 그냥 넘기고 옮기기
-                    continue
-
-            # visited가 1 나오기 전까지 2로 채우고 1 나오면 3으로 채우기
-            if visited[i][j] == 0:
-                if is_one:
-                    if is_five:
-                        sum_people[target+1] += people[i][j]
-                    elif is_check:
-                        sum_people[target-1] += people[i][j]
-                    else:
-                        sum_people[target+1] += people[i][j]
-                else:
-                    sum_people[target] += people[i][j]
-            elif visited[i][j] == 1:
-                is_one = True
-                is_pass = True
-
-    sum_people[1] = total - sum(sum_people[2:])
-    return (max(sum_people[1:]) - min(sum_people[1:]))
 
 dr = [-1, -1, 1, 1]
 dc = [1, -1, -1, 1]
 
 N = int(input())
+grid = [list(map(int, input().split())) for _ in range(N)]
 
-people = [] # 각 위치의 사람 수 배열
-for _ in range(N):
-    people.append(list(map(int,input().split())))
-
-total = sum([sum(row) for row in people])
+total_population = sum([sum(row) for row in grid])
 answer = 40000
 for sr in range(2, N):
     for sc in range(1, N-1):
@@ -154,23 +90,25 @@ for sr in range(2, N):
                 curr_row, curr_col = sr, sc
 
                 # 끝단 꼭짓점 연산하기.
-                keep = True
-                for d in range(4):
-                    for k in range(1, (first_step if d%2 == 0 else second_step)+1):
-                        curr_row, curr_col = curr_row + dr[d], curr_col + dc[d]
-                        if not in_range(curr_row, curr_col):
-                            keep = False
-                            break
-                        standard_point.append((curr_row, curr_col))
-                    if not keep:
+                for d in range(3):
+                    curr_row, curr_col = curr_row + dr[d] * (first_step if d%2 == 0 else second_step), curr_col + dc[d] * (first_step if d%2 == 0 else second_step)
+                    if not in_range(curr_row, curr_col):
                         break
-                if not keep:
-                    continue
+                    standard_point.append((curr_row, curr_col))
+
+                # 더 이상 살펴볼 수 없는 경우
+                if len(standard_point) != 4:
+                    break
 
                 # 나머지 부족 사람 수 연산하러 ㄱㄱㅆ
-                temp = cal(standard_point)
-                if answer > temp:
-                    answer = temp
+                pop_lst = calc_members(standard_point)
+                first_group = total_population - sum(pop_lst)
+
+                # 정답 업데이트하기.
+                max_pop = max(max(pop_lst), first_group)
+                min_pop = min(min(pop_lst), first_group)
+                if answer > max_pop-min_pop:
+                    answer = max_pop-min_pop
 
 # 정답 출력
 print(answer)
