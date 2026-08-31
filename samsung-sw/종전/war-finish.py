@@ -45,27 +45,23 @@ def calc_members(standard_point):
 
     # 우하단
     for row in range(standard_point[1][0]+1, N):
-        for col in range(standard_point[0][1], N):
-            if standard_point[0][0] + standard_point[0][1] < row + col:
-                return_lst[3] += grid[row][col]
+        for col in range(max(0, standard_point[0][0]-row+1) + standard_point[0][1], N):
+            return_lst[3] += grid[row][col]
 
     # 우상단
     for row in range(standard_point[1][0]+1):
-        for col in range(standard_point[2][1]+1, N):
-            if row - col < standard_point[1][0] - standard_point[1][1]:
-                return_lst[1] += grid[row][col]
+        for col in range(max(row-standard_point[1][0]+standard_point[1][1], standard_point[2][1])+1, N):
+            return_lst[1] += grid[row][col]
 
     # 좌상단
     for row in range(standard_point[3][0]):
-        for col in range(standard_point[2][1]+1):
-            if standard_point[2][0] + standard_point[2][1] > row + col:
-                return_lst[0] += grid[row][col]
+        for col in range(min(1, standard_point[2][0]-row)+standard_point[2][1]):
+            return_lst[0] += grid[row][col]
 
     # 좌하단
     for row in range(standard_point[3][0], N):
-        for col in range(standard_point[0][1]):
-            if row - col > standard_point[3][0] - standard_point[3][1]:
-                return_lst[2] += grid[row][col]
+        for col in range(min(standard_point[0][1], row-standard_point[3][0]+standard_point[3][1])):
+            return_lst[2] += grid[row][col]
 
     return return_lst
 
