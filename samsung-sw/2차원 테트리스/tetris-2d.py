@@ -41,42 +41,52 @@ to_red = {1: 1, 2: 3, 3: 2}
 
 # 블럭을 떨구는 로직
 def apply_gravity(block_type, curr_col, grid):
+    global answer1
     curr_row = 1
     if block_type == 2:
         while True:
             if curr_row == 6 or grid[curr_row][curr_col] or grid[curr_row][curr_col+1]:
                 grid[curr_row-1][curr_col] = grid[curr_row-1][curr_col+1] = 1
+                if sum(grid[curr_row-1]) == 4:
+                    grid.pop(curr_row-1)
+                    grid.insert(0, [0, 0, 0, 0])
+                    answer1 += 1
                 return
             curr_row += 1
     else:
         while True:
             if curr_row == 6 or grid[curr_row][curr_col]:
                 grid[curr_row-1][curr_col] = 1
-                if block_type == 3:
+                if block_type == 1:
+                    if sum(grid[curr_row-1]) == 4:
+                        grid.pop(curr_row - 1)
+                        grid.insert(0, [0, 0, 0, 0])
+                        answer1 += 1
+                else:
                     grid[curr_row-2][curr_col] = 1
+                    if sum(grid[curr_row-1]) == 4:
+                        grid.pop(curr_row - 1)
+                        grid.insert(0, [0, 0, 0, 0])
+                        answer1 += 1
+                        if sum(grid[curr_row-1]) == 4:
+                            grid.pop(curr_row - 1)
+                            grid.insert(0, [0, 0, 0, 0])
+                            answer1 += 1
+                    else:
+                        if sum(grid[curr_row-2]) == 4:
+                            grid.pop(curr_row-2)
+                            grid.insert(0, [0, 0, 0, 0])
+                            answer1 += 1
                 return
             curr_row += 1
 
-
-# 체크 하면서 지우기를 한 번에 처리하자.
 def check(grid):
-    global answer1
-
-    pointer = 5
-    while 0 <= pointer:
-        while sum(grid[pointer]) == 4:
-            grid.pop(pointer)
-            grid.insert(0, [0, 0, 0, 0])
-            answer1 += 1
-        pointer -= 1
-
     pop_count = 0
     for row in range(2):
         for col in range(4):
             if grid[row][col]:
                 pop_count += 1
                 break
-
     for _ in range(pop_count):
         grid.pop()
         grid.insert(0, [0, 0, 0, 0])
