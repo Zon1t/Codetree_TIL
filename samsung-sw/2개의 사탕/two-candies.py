@@ -32,65 +32,30 @@
 # 사탕 좌표 정도는 저장해두는 편이 좋을 것 같다. 기울일 때 주의 사항? 바닥면에 가까운 애들 먼저 떨구기
 # 전부 장애물로 막혀있다는 조건이 있다. inrange 확인은 안해도 될듯.
 
-def move(blue, red, direction, blue_first):
-    if blue_first:
-        next_blue = blue + deltas[direction]
-        while True:
-            # 적절한 분기처리
-            if grid[next_blue] == '#':
-                next_blue = next_blue-deltas[direction]
-                break
-            elif grid[next_blue] == 'O':
-                next_blue = -1
-                break
-            next_blue += deltas[direction]
+def move(red, blue, direction):
+    next_blue = blue + deltas[direction]
+    while True:
+        # 적절한 분기처리
+        if grid[next_blue] == '#':
+            next_blue = next_blue-deltas[direction]
+            break
+        elif grid[next_blue] == 'O':
+            next_blue = -1
+            break
+        next_blue += deltas[direction]
 
-        next_red = red + deltas[direction]
-        while True:
-            # 적절한 분기처리
-            if grid[next_red] == '#' or next_red == next_blue:
-                next_red = next_red-deltas[direction]
-                break
-            elif grid[next_red] == 'O':
-                next_red = -1
-                break
-            next_red += deltas[direction]
-    else:
-        next_red = red + deltas[direction]
-        while True:
-            # 적절한 분기처리
-            if grid[next_red] == '#':
-                next_red = next_red - deltas[direction]
-                break
-            elif grid[next_red] == 'O':
-                next_red = -1
-                break
-            next_red += deltas[direction]
-
-        next_blue = blue + deltas[direction]
-        while True:
-            # 적절한 분기처리
-            if grid[next_blue] == '#' or next_blue == next_red:
-                next_blue = next_blue - deltas[direction]
-                break
-            elif grid[next_blue] == 'O':
-                next_blue = -1
-                break
-            next_blue += deltas[direction]
+    next_red = red + deltas[direction]
+    while True:
+        # 적절한 분기처리
+        if grid[next_red] == '#':
+            next_red = next_red-deltas[direction]
+            break
+        elif grid[next_red] == 'O':
+            next_red = -1
+            break
+        next_red += deltas[direction]
 
     return next_red, next_blue
-
-# 기세로 가자.
-def simulate(direction, curr_red, curr_blue):
-    if direction==0:
-        return move(curr_blue, curr_red, direction, curr_red%M < curr_blue%M)
-    elif direction==1:
-        return move(curr_blue, curr_red, direction, curr_red//M < curr_blue//M)
-    elif direction==2:
-        return move(curr_blue, curr_red, direction, curr_red%M > curr_blue%M)
-    else:
-        return move(curr_blue, curr_red, direction, curr_red//M > curr_blue//M)
-
 
 N, M = map(int, input().split())
 grid = ''
@@ -131,7 +96,12 @@ def backtrack(cnt, curr_red, curr_blue):
     # 각 방향에 대해서 중력 적용.
     for d in range(4):
         # 왜 복사해서 보낼 생각을 했을까 흠..
-        next_red, next_blue = simulate(d, curr_red, curr_blue)
+        next_red, next_blue = move(curr_red, curr_blue, d)
+        if next_red == next_blue and next_red != -1:
+            if (d < 2) ^ (curr_red < curr_blue):
+                next_blue -= deltas[d]
+            else:
+                next_red -= deltas[d]
 
         for i in range(cnt+1):
             if (next_red, next_blue) in data[cnt]:
