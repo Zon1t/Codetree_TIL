@@ -32,94 +32,92 @@
 # 사탕 좌표 정도는 저장해두는 편이 좋을 것 같다. 기울일 때 주의 사항? 바닥면에 가까운 애들 먼저 떨구기
 # 전부 장애물로 막혀있다는 조건이 있다. inrange 확인은 안해도 될듯.
 
-def move(object, direction):
-    curr_row, curr_col = object
-    curr_object = grid[curr_row][curr_col]
-    grid[curr_row][curr_col] = 0
-    next_row, next_col = curr_row + dr[direction], curr_col + dc[direction]
-    while True:
-        # 적절한 분기처리
-        if grid[next_row][next_col] in [-1, 1, 2]:
-            grid[next_row-dr[direction]][next_col-dc[direction]] = curr_object
-            return (next_row-dr[direction], next_col-dc[direction])
-        elif grid[next_row][next_col] == 3:
-            return (-1, -1)
-        # 빈칸이면 탐험 계속하기
-        next_row += dr[direction]
-        next_col += dc[direction]
+def move(blue, red, direction, blue_first):
+    if blue_first:
+        next_blue = blue + deltas[direction]
+        while True:
+            # 적절한 분기처리
+            if grid[next_blue] == '#':
+                next_blue = next_blue-deltas[direction]
+                break
+            elif grid[next_blue] == 'O':
+                next_blue = -1
+                break
+            next_blue += deltas[direction]
+
+        next_red = red + deltas[direction]
+        while True:
+            # 적절한 분기처리
+            if grid[next_red] == '#' or next_red == next_blue:
+                next_red = next_red-deltas[direction]
+                break
+            elif grid[next_red] == 'O':
+                next_red = -1
+                break
+            next_red += deltas[direction]
+    else:
+        next_red = red + deltas[direction]
+        while True:
+            # 적절한 분기처리
+            if grid[next_red] == '#':
+                next_red = next_red - deltas[direction]
+                break
+            elif grid[next_red] == 'O':
+                next_red = -1
+                break
+            next_red += deltas[direction]
+
+        next_blue = blue + deltas[direction]
+        while True:
+            # 적절한 분기처리
+            if grid[next_blue] == '#' or next_blue == next_red:
+                next_blue = next_blue - deltas[direction]
+                break
+            elif grid[next_blue] == 'O':
+                next_blue = -1
+                break
+            next_blue += deltas[direction]
+
+    return next_red, next_blue
 
 # 기세로 가자.
 def simulate(direction, curr_red, curr_blue):
     if direction==0:
-        if curr_red[1] < curr_blue[1]:
-            next_blue = move(curr_blue, direction)
-            next_red = move(curr_red, direction)
-        else:
-            next_red = move(curr_red, direction)
-            next_blue = move(curr_blue, direction)
+        return move(curr_blue, curr_red, direction, curr_red%M < curr_blue%M)
     elif direction==1:
-        if curr_red[0] < curr_blue[0]:
-            next_blue = move(curr_blue, direction)
-            next_red = move(curr_red, direction)
-        else:
-            next_red = move(curr_red, direction)
-            next_blue = move(curr_blue, direction)
+        return move(curr_blue, curr_red, direction, curr_red//M < curr_blue//M)
     elif direction==2:
-        if curr_red[1] > curr_blue[1]:
-            next_blue = move(curr_blue, direction)
-            next_red = move(curr_red, direction)
-        else:
-            next_red = move(curr_red, direction)
-            next_blue = move(curr_blue, direction)
+        return move(curr_blue, curr_red, direction, curr_red%M > curr_blue%M)
     else:
-        if curr_red[0] > curr_blue[0]:
-            next_blue = move(curr_blue, direction)
-            next_red = move(curr_red, direction)
-        else:
-            next_red = move(curr_red, direction)
-            next_blue = move(curr_blue, direction)
-    return next_red, next_blue
+        return move(curr_blue, curr_red, direction, curr_red//M > curr_blue//M)
 
-dr = [0, 1, 0, -1]
-dc = [1, 0, -1, 0]
 
 N, M = map(int, input().split())
-grid = []
-for _ in range(N):
-    row = []
-    temp = list(input())
-    for ch in temp:
-        if ch == '.':
-            row.append(0)
-        elif ch == '#':
-            row.append(-1)
-        elif ch == 'R':
-            row.append(1)
-        elif ch == 'B':
-            row.append(2)
-        else:
-            row.append(3)
-    grid.append(row)
+grid = ''
+for i in range(N):
+    grid += input()
 
-red_row, red_col, blue_row, blue_col = -1, -1, -1, -1
-for row in range(N):
-    for col in range(M):
-        if grid[row][col] == 1:
-            red_row, red_col = row, col
-        if grid[row][col] == 2:
-            blue_row, blue_col = row, col
+deltas = (1, M, -1, -M)
+size = N*M
+
+red, blue = -1, -1
+for i in range(size):
+    if grid[i] == 'R':
+        red = i
+    elif grid[i] == 'B':
+        blue = i
 
 def backtrack(cnt, curr_red, curr_blue):
     global answer
     # 동시에 들어가는 것조차 안되니까
-    if curr_blue[0] == -1:
+    if curr_blue == -1:
         return
     # 가지치기? 하는 편이 좋겠지?
     if answer != -1 and answer <= cnt:
         return
 
     # 파랑도 들어갔으면 위에서 return. 빨강만 들어간 경우임.
-    if curr_red[0] == -1:
+    if curr_red == -1:
         # 만약 제때 들어갔다면 최소 업데이트
         if answer == -1 or cnt < answer:
             answer = cnt
@@ -135,16 +133,15 @@ def backtrack(cnt, curr_red, curr_blue):
         # 왜 복사해서 보낼 생각을 했을까 흠..
         next_red, next_blue = simulate(d, curr_red, curr_blue)
 
-        backtrack(cnt+1, next_red, next_blue)
-
-        if next_red[0] != -1:
-            grid[next_red[0]][next_red[1]] = 0
-        if next_blue[0] != -1:
-            grid[next_blue[0]][next_blue[1]] = 0
-
-        grid[curr_red[0]][curr_red[1]] = 1
-        grid[curr_blue[0]][curr_blue[1]] = 2
+        for i in range(cnt+1):
+            if (next_red, next_blue) in data[cnt]:
+                break
+        else:
+            data[cnt].add((next_red, next_blue))
+            backtrack(cnt+1, next_red, next_blue)
 
 answer = -1
-backtrack(0, (red_row, red_col), (blue_row, blue_col))
+data = [set() for _ in range(10)]
+data[0].add((red, blue))
+backtrack(0, red, blue)
 print(answer)
