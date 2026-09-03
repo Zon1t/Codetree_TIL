@@ -38,13 +38,15 @@
 dr = [-1, 1, 0, 0]
 dc = [0, 0, -1, 1]
 
+# 좌표를 반환하는 함수
 def in_range(row, col):
     return 0 <= row < N and 0 <= col < N
+
 
 def simulate():
     global pos_to_idx
     new_dict = dict()
-    for curr_row, curr_col in list(pos_to_idx.keys()):
+    for curr_row, curr_col in pos_to_idx:
         player_idx = pos_to_idx[(curr_row, curr_col)]
         # 1-1. 비어있는 공간 찾기.
         for next_dir in priority_info[player_idx][dir_info[player_idx]]:
@@ -70,7 +72,7 @@ def simulate():
         # 그냥 가져다가 쓰면 된다.
         dir_info[player_idx] = next_dir
         idx_to_pos[player_idx] = (next_row, next_col)
-        new_dict[(next_row, next_col)] = min(new_dict.get((next_row, next_col), float('inf')), player_idx)
+        new_dict[(next_row, next_col)] = min(new_dict.get((next_row, next_col), 99999), player_idx)
 
     # 3. 남은 사람 기준 계약 진행.
     for row, col in new_dict:
@@ -79,31 +81,32 @@ def simulate():
     # 4. 업데이트 사항 반영
     pos_to_idx = new_dict
 
-def custom_print():
-    print(f'-------pos_info--------')
-    for row in range(N):
-        for col in range(N):
-            if (row, col) in pos_to_idx:
-                print(pos_to_idx[(row, col)], end=' ')
-            else:
-                print(0, end=' ')
-        print()
-    print(f'-------spot_info---------')
-    for row in spot_info:
-        print(*row)
-    print(f'-------player_info--------')
-    for k in sorted(idx_to_pos):
-        print(f'key:{k}, pos:{idx_to_pos[k]}')
-        print(f'dir:{dir_info[k]}')
+
+# def custom_print():
+#     print(f'-------pos_info--------')
+#     for row in range(N):
+#         for col in range(N):
+#             if (row, col) in pos_to_idx:
+#                 print(pos_to_idx[(row, col)], end=' ')
+#             else:
+#                 print(0, end=' ')
+#         print()
+#     print(f'-------spot_info---------')
+#     for row in spot_info:
+#         print(*row)
+#     print(f'-------player_info--------')
+#     for k in sorted(idx_to_pos):
+#         print(f'key:{k}, pos:{idx_to_pos[k]}')
+#         print(f'dir:{dir_info[k]}')
 
 
 N, M, K = map(int, input().split())
 grid = [list(map(int, input().split())) for _ in range(N)]
 dir_info = [None] + list(map(lambda x: int(x)-1, input().split()))
 
-idx_to_pos = dict()
-pos_to_idx = dict()
-spot_info = [[(-1, -1)] * N for _ in range(N)]
+idx_to_pos = dict()                             # idx_to_pos[idx] : idx 번호 플레이어가 가진 위치를 저장
+pos_to_idx = dict()                             # pos_to_idx[(row, col)] : 해당 위치에 있는 플레이어 저장
+spot_info = [[(-1, -1)] * N for _ in range(N)]  # 계약 정보를 저장할 grid. (유효 마감일, 계약자) 형태로 저장.
 for row in range(N):
     for col in range(N):
         if grid[row][col]:
@@ -111,6 +114,7 @@ for row in range(N):
             pos_to_idx[(row, col)] = grid[row][col]
             spot_info[row][col] = (K, grid[row][col])
 
+# 우선 순위를 저장할 변수
 priority_info = [None]
 for _ in range(M):
     temp = []
@@ -118,6 +122,7 @@ for _ in range(M):
         temp.append(list(map(lambda x: int(x)-1, input().split())))
     priority_info.append(temp)
 
+# 실행부
 answer = -1
 for turn in range(1, 1001):
     # 시뮬레이션 진행.
@@ -128,4 +133,5 @@ for turn in range(1, 1001):
         answer = turn
         break
 
+# 정답 출력
 print(answer)
