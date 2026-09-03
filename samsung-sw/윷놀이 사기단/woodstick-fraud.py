@@ -50,94 +50,60 @@
 # 가지치기 조건 없나? 머리 아프니까 한 번 초기화 하고 가자.
 # 원하는 이동 횟수 -> 이거 뭔말임??
 
-grid = [[0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40],
-        [10, 13, 16, 19, 25, 30, 35, 40],
-        [20, 22, 24, 25, 30, 35, 40],
-        [30, 28, 27, 26, 25, 30, 35, 40]]
+# 격자를 하나로 만들어 보자.
+grid = [22, 24, 25, 30, 35, 13, 16, 19, 28, 27,
+        26, 0, 2, 4, 6, 8, 10, 12, 14, 16,
+        18, 20, 22, 24, 26, 28, 30, 32, 34, 36,
+        38, 40, 0, 0, 0, 0, 0]
+
+special_move = {
+    1 : [None, 2, 3, 4, 31, 32],
+    2 : [None, 3, 4, 31, 32, 32],
+    3 : [None, 4, 31, 32, 32, 32],
+    4 : [None, 31, 32, 32, 32, 32],
+    5 : [None, 6, 7, 2, 3, 4],
+    6 : [None, 7, 2, 3, 4, 31],
+    7 : [None, 2, 3, 4, 31, 32],
+    8 : [None, 9, 10, 2, 3, 4],
+    9 : [None, 10, 2, 3, 4, 31],
+    10 : [None, 2, 3, 4, 31, 32],
+    16 : [None, 5, 6, 7, 2, 3],
+    21 : [None, 0, 1, 2, 3, 4],
+    26 : [None, 8, 9, 10, 2, 3]
+}
+
 cnts = list(map(int, input().split()))
-
-grid_length = [len(row) for row in grid]
-chage_set = {10, 20, 30}
-check_set = {25, 35, 40}
-
-# 집합 찍어보기
-# for i in range(4):
-#     for j in range(i):
-#         print(f'--------intersection{i, j}---------')
-#         print(set(grid[i]).intersection(set(grid[j])))
-
-# 말의 정보를 받는 lst. 어쨋든 말 하나 움직이는 것까지 고정. 따라서 0번말 이동시켜놓기.
-# 별거 아닌 것 같지만 시간 많이 줄여줄듯?
-info = [[0, 0] for _ in range(4)]
-info[0] = [0, cnts[0]] if cnts[0] != 5 else [1, 0]
-
-def check(grid_idx, pos, mal_idx):
-    # 다른 말들에 대해서 진행.
-    for another_idx in range(4):
-        mal_grid, mal_pos = info[another_idx][0], info[another_idx][1]
-
-        # 자신이거나, 이미 탈출한 말인 경우 스킵.
-        if mal_idx == another_idx or mal_pos == -1:
-            continue
-
-        # 정확히 같은 격자, 같은 위치면 False
-        if mal_grid == grid_idx and mal_pos == pos:
-            return False
-        # 정확히 같은 값인데.. 이건 좀 생각해봐야 함.
-        if grid[mal_grid][mal_pos] == grid[grid_idx][pos]:
-            # 누가 봐도 같은 위치면 False
-            if grid[grid_idx][pos] in check_set:
-                return False
-            # 30인데 공통 경로의 30인 경우. 파랑30은 위에서 처리되었음.
-            if grid[grid_idx][pos] == 30 and pos and mal_pos:
-                return False
-
-    # 무사히 통과했으면 True 반환
-    return True
+info = [11] * 4
+info[0] += cnts[0]
 
 def backtrack(turn, acc):
     global answer
     # 종료 조건.
     if turn == 10:
-        if answer < acc:
-            answer = acc
+        answer = max(answer, acc)
         return
 
-    # 각 말에 대해서 진행.
-    for mal_idx in range(4):
-        grid_idx, curr_pos = info[mal_idx][0], info[mal_idx][1]
+    # 단위 작업 실행 + 재귀 호출
+    for mal in range(4):
+        curr_idx = info[mal]
 
-        # 만약 이미 탈출한 말이면 건뛰.
-        if curr_pos == -1:
+        # 이미 탈출했으면 continue
+        if curr_idx > 31:
             continue
 
-        # 다음 위치를 탐색한다.
-        next_pos = curr_pos + cnts[turn]
-
-        # 만약 격자 밖을 벗어나면 무조건 도착지점.
-        if next_pos >= grid_length[grid_idx]:
-            info[mal_idx][1] = -1
-            backtrack(turn+1, acc)
-            info[mal_idx][1] = curr_pos
+        # 아니면 진행.
+        next_idx = special_move[curr_idx][cnts[turn]] if curr_idx in special_move else curr_idx + cnts[turn]
+        if next_idx < 32 and next_idx in info:
             continue
 
-        # 그게 아니라면 격자 안에 존재.
-        # 파란 칸인 경우. 격자 바꿔주자.
-        if grid_idx == 0 and (grid[0][next_pos] in chage_set):
-            if check(grid[0][next_pos]//10, 0, mal_idx):
-                info[mal_idx] = [grid[0][next_pos]//10, 0]
-                backtrack(turn+1, acc+grid[0][next_pos])
-                info[mal_idx] = [0, curr_pos]
-        # 파란 칸이 아닌 경우. 그냥 격자따라 ㄱㄱ
-        else:
-            if check(grid_idx, next_pos, mal_idx):
-                info[mal_idx][1] = next_pos
-                backtrack(turn+1, acc+grid[grid_idx][next_pos])
-                info[mal_idx][1] = curr_pos
+        info[mal] = next_idx
+        backtrack(turn+1, acc+grid[next_idx])
+        info[mal] = curr_idx
+
 
 # 적절하게 백트래킹 진행
 answer = 0
-backtrack(1, grid[0][cnts[0]])
+backtrack(1, grid[info[0]])
 
 # 정답 출력
 print(answer)
