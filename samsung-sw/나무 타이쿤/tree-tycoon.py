@@ -1,57 +1,66 @@
-# 시키는대로 잘하기. 주의할 점이라면 초기에는 좌 하단 2*2
-# 이동시키키 -> 중요. 방향도 잘 맞춰야 할듯
-# 함수로 분리하면 좋을 것 같다. move -> grow -> cut
+# 4:43 시작
+# 1. 특수 영양제 이동시키기.
+# 2. 특수 영양제 투입.
+# 3. 인접한 곳으로부터 높이 성장
+# 4. 영양제를 투여한 곳 제외, 높이가 2 이상이라면 잘라내고 특수 영양제 올려두기.
 
-# 주어진 정보에 맞게 델타 세팅.
-dr = [0, -1, -1, -1, 0, 1, 1, 1]
-dc = [1, 1, 0, -1 ,-1, -1, 0, 1]
 
-def move(d, p):
-    global yeongyang
+dr = [None, 0, -1, -1, -1, 0, 1, 1, 1]
+dc = [None, 1, 1, 0, -1, -1, -1, 0, 1]
 
-    new_yeongyang = set()
-    for row, col in yeongyang:
-        next_row, next_col = (row + dr[d] * p) % N, (col + dc[d] * p) % N
-        new_yeongyang.add((next_row, next_col))
 
-    yeongyang = new_yeongyang
+def in_range(row, col):
+    return 0 <= row < N and 0 <= col < N
+
+
+def move(direction, cnt):
+    return [((pos[0]+dr[direction]*cnt)%N, (pos[1]+dc[direction]*cnt)%N) for pos in yeongyang]
 
 
 def grow():
-    # 우선 1 증가시켜야 함. 동시에 대각 처리까지 하면 꼬일 수 있음.
     for row, col in yeongyang:
         grid[row][col] += 1
 
     for row, col in yeongyang:
-        for d in (1, 3, 5, 7):
+        for d in (2, 4, 6, 8):
             next_row, next_col = row + dr[d], col + dc[d]
-            if next_row < 0 or next_row >= N or next_col < 0 or next_col >= N:
+            if not in_range(next_row, next_col):
                 continue
             if grid[next_row][next_col]:
                 grid[row][col] += 1
 
 
 def cut():
-    global yeongyang
-    new_yeongyang = set()
+    new_yeongyang = []
     for row in range(N):
         for col in range(N):
             if grid[row][col] >= 2 and (row, col) not in yeongyang:
                 grid[row][col] -= 2
-                new_yeongyang.add((row, col))
-    yeongyang = new_yeongyang
+                new_yeongyang.append((row, col))
+    return new_yeongyang
 
 
-# 안헷갈리게 Y로 받자.
-N, Y = map(int, input().split())
+def custom_print():
+    print(f'----grid----')
+    for row in grid:
+        print(*row)
+
+
+N, M = map(int, input().split())
 grid = [list(map(int, input().split())) for _ in range(N)]
+commands = [tuple(map(int, input().split())) for _ in range(M)]
 
-# 초기 영양제 세팅
-yeongyang = set([(-1, 0), (-1, 1), (-2, 0), (-2, 1)])
-for _ in range(Y):
-    d, p = map(int, input().split())
-    move((d-1)%8, p)
+yeongyang = [(-2, 0), (-2, 1),
+             (-1, 0), (-1, 1)]
+for direction, cnt in commands:
+    # 1. 움직이기.
+    yeongyang = move(direction, cnt)
+
+    # 2. 성장시키기.
     grow()
-    cut()
 
+    # 3. 자르기.
+    yeongyang = cut()
+
+# 정답 출력
 print(sum([sum(row) for row in grid]))
