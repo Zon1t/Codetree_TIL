@@ -1,47 +1,42 @@
-# 블럭 주머니를 만들자! 주어진 블럭의 상대 좌표들(delta_coordinate)을 담고
-# 200 * 200을 순회하며 주머니 안에 있는 애들을 꺼내 합을 저장한다. 하나하나 하다보면 가능하지 않을까?
-# 대칭과 구분이 안되는 애들이 많아 생각보다 가짓수가 많진 않다.
+# 시작 5:05
+# 아는 것이 저주.. 풀이 방법이 너무 기억에 남는다. 저번에 완탐했었는데
+# 이번엔 백트래킹으로 ㄱㄱ
 
-blocks = [((0, 0), (0, 1), (0, 2), (0, 3)),     # I블럭
-          ((0, 0), (1, 0), (2, 0), (3, 0)),
-          ((0, 0), (1, 0), (0, 1), (1, 1)),     # O블럭
-          ((0, 0), (1, 0), (2, 0), (2, 1)),     # L블럭
-          ((0, 0), (1, 0), (0, 1), (0, 2)),
-          ((0, 0), (0, 1), (1, 1), (2, 1)),
-          ((0, 2), (1, 0), (1, 1), (1, 2)),
-          ((0, 1), (1, 1), (2, 0), (2, 1)),     # L블럭 뒤집기
-          ((0, 0), (1, 0), (1, 1), (1, 2)),
-          ((0, 0), (0, 1), (1, 0), (2, 0)),
-          ((0, 0), (0, 1), (0, 2), (1, 2)),
-          ((0, 0), (1, 0), (1, 1), (2, 1)),     # Z블럭
-          ((0, 1), (1, 0), (1, 1), (0, 2)),
-          ((0, 1), (1, 0), (1, 1), (2, 0)),     # Z블럭 뒤집기
-          ((0, 0), (0, 1), (1, 1), (1, 2)),
-          ((0, 0), (1, 0), (1, 1), (2, 0)),     # T블럭
-          ((0, 0), (0, 1), (0, 2), (1, 1)),
-          ((0, 1), (1, 0), (1, 1), (2, 1)),
-          ((0, 1), (1, 0), (1, 1), (1, 2))]
+dr = [0, 1, 0, -1]
+dc = [1, 0, -1, 0]
 
-# 실행부
+
+def in_range(row, col):
+    return 0 <= row < N and 0 <= col < M
+
+
+def backtrack(cnt, acc, lst):
+    global answer
+    if cnt == 4:
+        if answer < acc:
+            answer = acc
+        return
+
+    for curr_row, curr_col in lst:
+        for d in range(4):
+            next_row, next_col = curr_row + dr[d], curr_col + dc[d]
+
+            if not in_range(next_row, next_col) or visit[next_row][next_col]:
+                continue
+
+            visit[next_row][next_col] = 1
+            backtrack(cnt+1, acc+grid[next_row][next_col], lst+[(next_row, next_col)])
+            visit[next_row][next_col] = 0
+
+
 N, M = map(int, input().split())
-arr = [list(map(int, input().split())) for _ in range(N)]
-answer = 0
+grid = [list(map(int, input().split())) for _ in range(N)]
+visit = [[0] * M for _ in range(N)]
 
+answer = 0
 for row in range(N):
     for col in range(M):
-        for i in range(19):
-            temp = 0
-            for j in range(4):
-                nr, nc = row + blocks[i][j][0], col + blocks[i][j][1]
-                
-                # 벗어나면 해당 deltas는 현재 위치에서 사용할 수 없음.
-                if nr < 0 or nr >= N or nc < 0 or nc >= M:
-                    break
-                
-                temp += arr[nr][nc]
-            
-            else:
-                # 정상적으로 순회를 마쳤다면 정답 업데이트.
-                if answer < temp:
-                    answer = temp
+        visit[row][col] = 1
+        backtrack(1, grid[row][col], [(row, col)])
+
 print(answer)
