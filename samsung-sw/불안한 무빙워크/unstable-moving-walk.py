@@ -1,82 +1,69 @@
-# 해야 할 것. 1. 한 칸 먼저 회전시키기. 2. 이동 시키기. 3. 한 명 더 올리기. 4. 종료 체크하기.
-# 위 과정을 반복하면 된다. 아마 큐의 rotate 등의 개념을 사용하면 풀이에 용이할 것으로 판단된다.
-# 관리를 어떻게 하면 좋을까? 1번 위치(칸 아님)에 있는 건 pointer개념 활용. 사람은 set으로 둬서
-# 업데이트를 하면 편할 것으로 생각된다.
-
-# 중복되는 코드가 많은데 나중에 리팩토링하면서 고쳐보자.
-# 주의할 점. 사람은 그냥 상대적인 위치가 아니라는거?
-
-from collections import deque
+# 시작 04:51
+# 1. 무빙워크 한 칸 회전
+# 2. 회전 방향으로 사람 1칸 이동. 이동 불가시 X
+# 3. 1번 칸 사람 올리기.
+# 4. 안정성이 0인 칸 k개 이상이면 종료.
 
 def move():
-    global zero_cnt
+    global cnt
+    for delta_idx in range(N-2, 0, -1):
+        curr_idx = (pointer + delta_idx) % mod
+        next_idx = (pointer + delta_idx + 1) % mod
+        if human[curr_idx] and not human[next_idx] and moving_walk[next_idx]:
+            human[curr_idx], human[next_idx] = False, True
+            moving_walk[next_idx] -= 1
 
-    # 번거롭지만 끝에 있는 사람은 따로 연산해주었다.
-    if human:
-        next_pos = (human[-1] + 1) % length
-        if lst[next_pos] != 0:
-            human[-1] = next_pos
-            lst[human[-1]] -= 1
+            if moving_walk[next_idx] == 0:
+                cnt += 1
 
-            if lst[human[-1]] == 0:
-                zero_cnt += 1
+    if human[Nth_pos]:
+        human[Nth_pos] = False
 
-    for i in range(human_cnt-2, -1, -1):
-        # 내 위치 다음 한 칸을 찾는다.
-        next_pos = (human[i]+1) % length
-
-        # 다음 칸의 안정성이 0보다 크고 다음 위치에 내 앞사람이 없다면 한 칸 이동
-        if lst[next_pos] and human[i+1] != next_pos:
-            human[i] = next_pos
-            lst[human[i]] -= 1
-
-            if lst[human[i]] == 0:
-                zero_cnt += 1
-
-def check():
-    global human_cnt
-    if human and human[-1] == (pointer + N-1) % length:
-        human.pop()
-        human_cnt -= 1
 
 def custom_print():
-    print(human)
-    print(*(lst[pointer:]+lst[:pointer]))
+    print(f'----moving_walk----')
+    for i in range(mod):
+        print(moving_walk[(pointer+i)%mod], end=' ')
+        if i == N-1:
+            print()
+    print(f'----human----')
+    for i in range(mod):
+        print(human[(pointer+i)%mod], end=' ')
+        if i == N-1:
+            print()
 
 
-N, k = map(int, input().split())
-lst = list(map(int, input().split()))
+N, K = map(int, input().split())
+moving_walk = list(map(int, input().split()))
+pointer, mod, cnt = 0, 2*N, 0
 
-human = deque()
-length = 2 * N
-pointer = 0
-
-human_cnt = 0
-zero_cnt = 0
+human = [False] * mod
 turn = 0
-
 while True:
     turn += 1
 
-    # 1. 한 칸 회전시키기.
-    pointer = (pointer - 1) % length
-    check()     # 사람 뺄 수 있으면 빼기
+    # 1. 한 칸 회전
+    pointer = (pointer - 1) % mod
+    Nth_pos = (pointer + N - 1) % mod
 
-    # 2. 이동 시키기.
+    if human[Nth_pos]:
+        human[Nth_pos] = False
+
+    # 2. 사람 이동
     move()
-    check()     # 사람 뺄 수 있으면 빼기
 
-    # 3. pointer 위치에 사람 올리기. 1번 칸에 사람이 있는 경우가 존재할 수 없다. 회전이 되기 때문
-    if lst[pointer]:
-        human.appendleft(pointer)   # pointer에 가까운 순으로 왼쪽에 배치된다.
-        human_cnt += 1
+    if cnt >= K:
+        break
 
-        lst[pointer] -= 1
-        if lst[pointer] == 0:
-            zero_cnt += 1
+    # 3. 사람 올리기
+    if moving_walk[pointer]:
+        human[pointer] = True
+        moving_walk[pointer] -= 1
 
-    # 4. 안정성 검사 cnt가 k이상이면 종료하기.
-    if zero_cnt >= k:
+        if moving_walk[pointer] == 0:
+            cnt += 1
+
+    if cnt >= K:
         break
 
 print(turn)
