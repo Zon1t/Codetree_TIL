@@ -34,8 +34,6 @@ class Knight:
     def check(self, d):
         # 초기 세팅 가져오기.
         curr_row, curr_col = self.get_setting(d)
-        if curr_row < 1 or curr_row > N or curr_col < 1 or curr_col > N:
-            return False, None
 
         # 순회하며 집합 채워나가기.
         return_set, check_set, flag = {self.idx}, set(), d%2+1
