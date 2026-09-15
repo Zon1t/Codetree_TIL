@@ -1,5 +1,3 @@
-# 총 정렬해두는 버전
-
 ''' 싸움땅 / 20260910 / 체감 난이도 : 골드 4~3
 소요 시간 : 58분 / 시도 : 1회 / 실행 시간 : 112ms / 메모리 : 19MB
 
@@ -25,11 +23,10 @@
     뒤 문제 한 번 더 읽고 제출해보았다.
 '''
 
+
 # 격자 위 여러 객체에 대한 상호작용을 다루는 전형적인 문제같다.
 # 시키는 대로 잘만 하면 될듯? 이럴 때 클래스 쓸 줄 알면 좋은 것 같은데.. 일단은 그냥 하자.
 # 생각해보니 좌표 -> 플레이어도 가능해야 함.. 이것도 저장하자.
-
-from bisect import insort_left
 
 # 주어진 순서에 맞게 델타 세팅
 dr = [-1, 0, 1, 0]
@@ -57,11 +54,16 @@ def move(player):
     # 2-1. 플레이어가 없다면.. 총 줍기.
     if player_grid[next_row][next_col] == -1:
         if guns[next_row][next_col]:
-            my_gun, max_gun = having_guns[player], guns[next_row][next_col][-1]
+            my_gun, max_gun = having_guns[player], max(guns[next_row][next_col])
             if my_gun < max_gun:
-                having_guns[player] = guns[next_row][next_col].pop()
+                max_idx = guns[next_row][next_col].index(max_gun)
+
                 if my_gun:
-                    insort_left(guns[next_row][next_col], my_gun)
+                    guns[next_row][next_col][max_idx] = my_gun
+                else:
+                    guns[next_row][next_col].pop(max_idx)
+
+                having_guns[player] = max_gun
 
         # 정보 업데이트 잘하자.
         player_grid[next_row][next_col] = player
@@ -72,8 +74,7 @@ def move(player):
         my_power, another_power = status[player]+having_guns[player], status[another_player]+having_guns[another_player]
 
         # 승자 패자 판단하기.
-        if my_power > another_power or \
-                (my_power == another_power and status[player] > status[another_player]):
+        if (my_power, status[player]) > (another_power, status[another_player]):
             win_player, lose_player = player, another_player
         else:
             win_player, lose_player = another_player, player
@@ -82,7 +83,7 @@ def move(player):
 
         # 패배자 총 떨구기
         if having_guns[lose_player]:
-            insort_left(guns[next_row][next_col], having_guns[lose_player])
+            guns[next_row][next_col].append(having_guns[lose_player])
             having_guns[lose_player] = 0
 
         # 패배자 이동시키기
@@ -104,18 +105,27 @@ def move(player):
 
         # 총 줍기
         if guns[lose_row][lose_col]:
-            having_guns[lose_player] = guns[lose_row][lose_col].pop()
+            max_gun = max(guns[lose_row][lose_col])
+            max_idx = guns[lose_row][lose_col].index(max_gun)
+            guns[lose_row][lose_col].pop(max_idx)
+            having_guns[lose_player] = max_gun
 
         # 이긴 애도 총 줍기.
         if guns[next_row][next_col]:
-            my_gun, max_gun = having_guns[win_player], guns[next_row][next_col][-1]
+            my_gun, max_gun = having_guns[win_player], max(guns[next_row][next_col])
             if my_gun < max_gun:
-                having_guns[win_player] = guns[next_row][next_col].pop()
+                max_idx = guns[next_row][next_col].index(max_gun)
+
                 if my_gun:
-                    insort_left(guns[next_row][next_col], my_gun)
+                    guns[next_row][next_col][max_idx] = my_gun
+                else:
+                    guns[next_row][next_col].pop(max_idx)
+
+                having_guns[win_player] = max_gun
 
         # 정보 업데이트
         player_grid[next_row][next_col] = win_player
+
 
 # 플레이어 정보 관리
 N, M, K = map(int, input().split())
@@ -124,7 +134,6 @@ directions = []
 status = []
 having_guns = [0] * M          # 초기엔 총 없음
 
-# 총 정보 받기
 guns = [[[] for _ in range(N)] for _ in range(N)]
 for row in range(N):
     for col, val in enumerate(map(int, input().split())):
@@ -132,7 +141,7 @@ for row in range(N):
             continue
         guns[row][col].append(val)
 
-# 플레이어 정보 받기
+# 데이터 저장
 player_grid = [[-1] * N for _ in range(N)]
 for idx in range(M):
     r, c, d, s = map(int, input().split())
