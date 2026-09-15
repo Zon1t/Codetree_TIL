@@ -121,7 +121,6 @@ for _ in range(Q):
     # 움직일 수 있다면 이동시키기.
     can_move, move_set = knights[attack_idx].check(direction)
     if can_move:
-        move_set.add(attack_idx)
         for knight_idx in move_set:
             knights[knight_idx].erase()
         for knight_idx in move_set:             
