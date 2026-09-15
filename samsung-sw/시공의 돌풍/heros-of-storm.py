@@ -1,83 +1,90 @@
-# 인접한 방향의 칸 수를 잘 세어야겠다. 더불어 확산되는 양을 적절하게 잘 줄일 필요가 있을 것이다.
-# 주의할 점! 확산이 끝난 뒤에 다음 칸에 반영이 된다. 이는 새로운 배열을 만들고 다 연산한 이후 추가하자.
-# 구현해야 할 함수. simulate, rotate
+# 시작 5:12
+# 확산 -> 청소 두 개의 함수로 구분하여 만들면 되겠다.
+# 범위 벗어남 or 돌풍 있음 -> 확산 일어나지 않음. 새로운 격자 만들어서 업뎃 ㄱㄱ
+# 청소.. 노가다해서 땡기는 로직 만들자.
+
 
 dr = [0, 1, 0, -1]
 dc = [1, 0, -1, 0]
-
-def simulate():
-    temp_grid = [[0] * M for _ in range(N)]
-
-    # 확산
-    for row in range(N):
-        for col in range(M):
-            # 돌풍이 있는 곳은 확산이 안 일어남.
-            if (row == sr and col == 0) or (row == sr+1 and col == 0):
-                continue
-
-            temp = grid[row][col] // 5
-            for d in range(4):
-                next_row, next_col = row + dr[d], col + dc[d]
-
-                if not in_range(next_row, next_col):
-                    continue
-                if grid[next_row][next_col] == -1:
-                    continue
-
-                grid[row][col] -= temp
-                temp_grid[next_row][next_col] += temp
-
-    # 반영
-    for row in range(N):
-        for col in range(M):
-            grid[row][col] += temp_grid[row][col]
-
-
-def rotate():
-    # 윗 직사각형 왼쪽 변
-    for row in range(sr-1, 0, -1):
-        grid[row][0] = grid[row-1][0]
-    # 윗 직사각형 윗쪽 변
-    for col in range(M-1):
-        grid[0][col] = grid[0][col+1]
-    # 윗 직사각형 오른쪽 변
-    for row in range(sr):
-        grid[row][-1] = grid[row+1][-1]
-    # 윗 직사각형 아랫쪽 변
-    for col in range(M-1, 1, -1):
-        grid[sr][col] = grid[sr][col-1]
-    grid[sr][1] = 0
-
-    # 아랫 직사각형 왼쪽 변
-    for row in range(sr+2, N-1):
-        grid[row][0] = grid[row+1][0]
-    # 아랫 직사각형 아랫쪽 변
-    for col in range(M-1):
-        grid[-1][col] = grid[-1][col+1]
-    # 아랫 직사각형 오른쪽 변
-    for row in range(N-1, sr+1, -1):
-        grid[row][-1] = grid[row-1][-1]
-    # 아랫 직사각형 윗쪽 변
-    for col in range(M-1, 1, -1):
-        grid[sr+1][col] = grid[sr+1][col-1]
-    grid[sr+1][1] = 0
 
 
 def in_range(row, col):
     return 0 <= row < N and 0 <= col < M
 
 
-N, M, t = map(int, input().split())
+def get_dolpung():
+    for row in range(N):
+        for col in range(M):
+            if grid[row][col] == -1:
+                return row
+
+
+def spread():
+    update_grid = [[0] * M for _ in range(N)]
+
+    for row in range(N):
+        for col in range(M):
+            if grid[row][col] <= 0:
+                continue
+
+            curr_munji = grid[row][col]
+            give_munji = curr_munji // 5
+
+            for d in range(4):
+                next_row, next_col = row + dr[d], col + dc[d]
+                if not in_range(next_row, next_col) or grid[next_row][next_col] == -1:
+                    continue
+                update_grid[next_row][next_col] += give_munji
+                grid[row][col] -= give_munji
+
+    for row in range(N):
+        for col in range(M):
+            grid[row][col] += update_grid[row][col]
+
+
+def clean():
+    # 윗 돌풍 청소 진행
+    for row in range(upper-1, 0, -1):
+        grid[row][0] = grid[row-1][0]
+    for col in range(M-1):
+        grid[0][col] = grid[0][col+1]
+    for row in range(upper):
+        grid[row][-1] = grid[row+1][-1]
+    for col in range(M-1, 1, -1):
+        grid[upper][col] = grid[upper][col-1]
+    grid[upper][1] = 0
+
+    # 아랫 돌풍 청소 진행
+    for row in range(lower+1, N-1):
+        grid[row][0] = grid[row+1][0]
+    for col in range(M-1):
+        grid[-1][col] = grid[-1][col+1]
+    for row in range(N-1, lower, -1):
+        grid[row][-1] = grid[row-1][-1]
+    for col in range(M-1, 1, -1):
+        grid[lower][col] = grid[lower][col-1]
+    grid[lower][1] = 0
+
+
+def print_grid():
+    print(f'----munji_grid----')
+    for row in grid:
+        print(*row)
+
+
+N, M, T = map(int, input().split())
 grid = [list(map(int, input().split())) for _ in range(N)]
 
-sr = -1
-for row in range(N):
-    if grid[row][0] == -1:
-        sr = row
-        break
+upper = get_dolpung()
+lower = upper + 1
 
-for _ in range(t):
-    simulate()
-    rotate()
+for _ in range(T):
+    # 1. 확산하기.
+    spread()
 
+    # 2. 청소하기.
+    clean()
+
+# 정답 출력
 print(sum([sum(row) for row in grid]) + 2)
+
