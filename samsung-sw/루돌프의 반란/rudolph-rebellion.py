@@ -98,14 +98,7 @@ def gorani_accident(santa_idx, d):
 
     # 낙하 지점 확인. 분기문 적절하게 작성.
     next_row, next_col = santa_row + dr[d]*C, santa_col + dc[d]*C
-    if not in_range(next_row, next_col):
-        santa_out[santa_idx] = True
-    else:
-        if santa_grid[next_row][next_col] == -1:
-            santa_grid[next_row][next_col] = santa_idx
-            santa_lst[santa_idx] = (next_row, next_col)
-        else:
-            interaction(santa_idx, next_row, next_col, d)
+    interaction(santa_idx, next_row, next_col, d)
 
 
 def santa_move(idx):
@@ -145,32 +138,27 @@ def santa_accident(santa_idx, d):
 
     # 낙하 지점에 의거한 분기문 처리
     next_row, next_col = santa_row - dr[d]*(D-1), santa_col - dc[d]*(D-1)
-    if not in_range(next_row, next_col):
-        santa_out[santa_idx] = True
-    else:
-        if santa_grid[next_row][next_col] == -1:
-            santa_grid[next_row][next_col] = santa_idx
-            santa_lst[santa_idx] = (next_row, next_col)
-        else:
-            interaction(santa_idx, next_row, next_col, (d+2)%4)
+    interaction(santa_idx, next_row, next_col, (d+2)%4)
 
 
 def interaction(attack_idx, row, col, direction):
+    # 격자 밖이면 아웃처리
+    if not in_range(row, col):
+        santa_out[attack_idx] = True
+        return
+
     # 밀침 대상 확인 및 정보 업데이트.
     pushed_santa = santa_grid[row][col]
     santa_grid[row][col] = attack_idx
     santa_lst[attack_idx] = (row, col)
 
+    # 비어있으면 그냥 안착
+    if pushed_santa == -1:
+        return
+
     # 밀쳐지는 지점에 따른 적절한 분기문 처리.
     next_row, next_col = row + dr[direction], col + dc[direction]
-    if not in_range(next_row, next_col):
-        santa_out[pushed_santa] = True
-    else:
-        if santa_grid[next_row][next_col] == -1:
-            santa_grid[next_row][next_col] = pushed_santa
-            santa_lst[pushed_santa] = (next_row, next_col)
-        else:
-            interaction(pushed_santa, next_row, next_col, direction)
+    interaction(pushed_santa, next_row, next_col, direction)
 
 
 def custom_print():
@@ -221,17 +209,17 @@ for turn in range(1, M+1):
 
         santa_move(idx)
 
-    keep_going = False
     # 3. 턴 종료
+    keep_going = False
     for idx in range(P):
         if santa_out[idx]:
             continue
         scores[idx] += 1
         keep_going = True
 
-    # 조기 종료 체크
+    # 종료 체크
     if not keep_going:
         break
 
-# 정답 출력하기
+# 정답 출력
 print(*scores)
