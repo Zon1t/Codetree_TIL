@@ -91,16 +91,17 @@ def move():
 
             # 다음 위치를 기준으로 한 맨해튼 거리 기반 최단거리 비교
             next_dist = get_dist((next_row, next_col), EXIT)
-            if next_dist < curr_dist:
+            if next_dist >= curr_dist:
+                continue
 
-                # 나갔으면 탈출처리
-                if (next_row, next_col) == EXIT:
-                    arrive[idx] = True
+            # 나갔으면 탈출처리
+            if (next_row, next_col) == EXIT:
+                arrive[idx] = True
 
-                # 이동 처리
-                human[idx] = (next_row, next_col)
-                answer += 1
-                break
+            # 이동 처리
+            human[idx] = (next_row, next_col)
+            answer += 1
+            break
 
 # 정사각형 찾기
 def find():
@@ -122,36 +123,36 @@ def find():
     # 해당 위치 및 사이즈 반환
     return standard
 
-# 깎고 돌리기
+
 def rotate(start_row, start_col, size):
     global EXIT
-    
+
     # 끝 지점을 찾아보자. 이동을 위한 임시 변수도 세팅
     end_row, end_col = start_row+size, start_col+size
-    temp = [[0] * (size+1) for _ in range(size+1)]
+    temp = [[0] * size for _ in range(size)]
 
     # 순회하며 깎고 돌리는 위치에 놓기
-    for row in range(start_row, end_row+1):
-        for col in range(start_col, end_col+1):
+    for row in range(start_row, end_row):
+        for col in range(start_col, end_col):
             if grid[row][col]:
                 grid[row][col] -= 1
             temp[col-start_col][-1-row+start_row] = grid[row][col]
+
+    # 이제 이동시키자.
+    for row in range(start_row, end_row):
+        for col in range(start_col, end_col):
+            grid[row][col] = temp[row-start_row][col-start_col]
 
     # 사람도 돌려
     for idx, (row, col) in enumerate(human):
         if arrive[idx]:
             continue
 
-        if start_row <= row <= end_row and start_col <= col <= end_col:
-            human[idx] = (start_row+col-start_col, end_col-row+start_row)
+        if start_row <= row < end_row and start_col <= col < end_col:
+            human[idx] = (start_row+col-start_col, end_col-1-row+start_row)
 
-    # 이제 이동시키자.
-    for row in range(start_row, end_row+1):
-        for col in range(start_col, end_col+1):
-            grid[row][col] = temp[row-start_row][col-start_col]
-
-    # 탈출구도 물론 이동
-    EXIT = (start_row+EXIT[1]-start_col, end_col-EXIT[0]+start_row)
+    # 탈출구도 돌려
+    EXIT = (start_row+EXIT[1]-start_col, end_col-1-EXIT[0]+start_row)
 
 
 def custom_print():
@@ -186,7 +187,7 @@ for turn in range(K):
 
     # 2. 작은 사각형 찾고 돌리기.
     size, start_row, start_col = find()
-    rotate(start_row, start_col, size)
+    rotate(start_row, start_col, size+1)
 
 # 정답 출력
 print(answer)
