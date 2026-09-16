@@ -1,64 +1,87 @@
-# 백트래킹 문제인가? 격자의 크기는 최대 8*8
-# 자신의 말도 최대 8개. 음.. 4^8의 가짓수면 그냥 완탐이긴 하다.
-# 뭘 어떻게 풀어도 다 될 것 같긴 한데, 그냥 itertools 써보면 될 것도 같다.
+# 시작 11:30 종료
+# 기물에 따른 적절한 델타 세팅. 가짓 수 줄일 수 있는건 줄여볼까?
+# 5일 때는 미리 연산해두기. 2는 절반만.
+# 순회해서 백트래킹으로 해보자.
 
-from itertools import product
+dr = [0, 1, 0, -1]
+dc = [1, 0, -1, 0]
+deltas = [None, [(0,), (1,), (2,), (3,)], [(0, 2), (1, 3)], [(0, 1), (1, 2), (2, 3), (3, 0)],\
+          [(0, 1, 2), (1, 2, 3), (2, 3, 0), (3, 0, 1)]]
+
 
 def in_range(row, col):
     return 0 <= row < N and 0 <= col < M
 
-dr = [0, 1, 0, -1]
-dc = [1, 0, -1, 0]
 
-# 돌아가는 방향에 대한 부분
-# deltas[idx] : idx번호의 기물이 컨트롤 하는 상대방향
-deltas = [None, [0], [-1, 1], [0, 1], [-1, 0, 1], [-1, 0, 1, 2]]
+def check():
+    temp = 0
+    for row in range(N):
+        for col in range(M):
+            if not grid[row][col] and not visited[row][col]:
+                temp += 1
+    return temp
+
+
+def backtrack(idx):
+    global answer
+    if idx == total_mal:
+        temp = check()
+        if temp < answer:
+            answer = temp
+        return
+
+    curr_row, curr_col = mal[idx]
+    mal_type = grid[curr_row][curr_col]
+    for comb_dir in deltas[mal_type]:
+        for d in comb_dir:
+            next_row, next_col = curr_row, curr_col
+            while True:
+                next_row, next_col = next_row + dr[d], next_col + dc[d]
+                if not in_range(next_row, next_col) or grid[next_row][next_col] == 6:
+                    break
+                visited[next_row][next_col] += 1
+
+        backtrack(idx+1)
+
+        for d in comb_dir:
+            next_row, next_col = curr_row, curr_col
+            while True:
+                next_row, next_col = next_row + dr[d], next_col + dc[d]
+                if not in_range(next_row, next_col) or grid[next_row][next_col] == 6:
+                    break
+                visited[next_row][next_col] -= 1
+
+# ========================================
+# 입력받기
+# ========================================
 
 N, M = map(int, input().split())
 grid = [list(map(int, input().split())) for _ in range(N)]
-answer = 64
 
-cnt, ours = 0, []
-empty = 0
+lst_5, mal = [], []
 for row in range(N):
     for col in range(M):
-        if 1 <= grid[row][col] <= 5:
-            ours.append((row, col))
-            cnt += 1
-        elif grid[row][col] == 0:
-            empty += 1
+        if grid[row][col] == 5:
+            lst_5.append((row, col))
+        elif 1 <= grid[row][col] <= 4:
+            mal.append((row, col))
+total_mal = len(mal)
 
-comb_lst = []
-for row, col in ours:
-    if grid[row][col] == 2:
-        comb_lst.append((0, 1))
-    elif grid[row][col] == 5:
-        comb_lst.append((0,))
-    else:
-        comb_lst.append((0, 1, 2, 3))
+# 5는 미리 처리
+visited = [[0] * M for _ in range(N)]
+for row, col in lst_5:
+    for d in range(4):
+        next_row, next_col = row, col
+        while True:
+            next_row, next_col = next_row + dr[d], next_col + dc[d]
+            if not in_range(next_row, next_col) or grid[next_row][next_col] == 6:
+                break
+            visited[next_row][next_col] += 1
 
-# 각 조합에 대한 빈 칸의 개수 세기.
-for t in product(*comb_lst):
-    temp_grid = [[0]*M for _ in range(N)]
-    temp_cnt = empty
-    for idx in range(cnt):
-        curr_row, curr_col = ours[idx]
-        curr_dir = t[idx]
-        for delta_d in deltas[grid[curr_row][curr_col]]:
-            next_dir = (curr_dir + delta_d)%4
-            next_row, next_col = curr_row, curr_col
-            while True:
-                next_row += dr[next_dir]
-                next_col += dc[next_dir]
+# ===============================
+# 실행부
+# ===============================
 
-                if not in_range(next_row, next_col) or grid[next_row][next_col] == 6:
-                    break
-
-                if grid[next_row][next_col] == 0 and temp_grid[next_row][next_col] == 0:
-                    temp_cnt -= 1
-                    temp_grid[next_row][next_col] = 1
-
-    if temp_cnt < answer:
-        answer = temp_cnt
-
+answer = N*M
+backtrack(0)
 print(answer)
