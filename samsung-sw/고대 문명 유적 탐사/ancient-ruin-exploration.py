@@ -1,4 +1,4 @@
-# 큐 안 쓰는 버전
+# 큐 쓰지 말고 bfs해보자.
 
 dr = [0, 1, 0, -1]
 dc = [1, 0, -1, 0]
@@ -40,7 +40,7 @@ def bfs(find_grid):
             else:
                 return_lst += lst
 
-    return return_lst, len(return_lst)
+    return return_lst
 
 
 def small_bfs(lst):
@@ -96,19 +96,16 @@ def rotate(sr, sc, cnt_):
 
 def priority():
     curr_max = (0, 0, 0, 0)
-    max_lst, max_grid = None, None
     for row in range(3):
         for col in range(3):
             for cnt in range(1, 4):
                 rotate_grid = rotate(row, col, cnt)
-                pos_lst, money = bfs(rotate_grid)
+                money = len(bfs(rotate_grid))
 
                 if curr_max < (money, -cnt, -col, -row):
                     curr_max = (money, -cnt, -col, -row)
-                    max_grid = rotate_grid
-                    max_lst = pos_lst
     
-    return max_lst, max_grid, -curr_max[3], -curr_max[2] 
+    return -curr_max[1], -curr_max[3], -curr_max[2] 
 
 
 def get_money(lst):
@@ -140,13 +137,15 @@ ordering_rule = lambda x: (x[1], -x[0])
 
 answer = []
 for _ in range(K):
-    # 1. 우선 순위에 의거한 회전 시키기.
-    lst, grid, rotate_col, rotate_row = priority()
+    # 1. 우선 순위찾기
+    cnt, rotate_row, rotate_col = priority()
     # ** 종료 체크하기.
-    if lst is None:
+    if cnt == 0:
         break
 
-    # 2. 유물 획득하기.
+    # 2. 실제로 돌리고 보물 얻기.
+    grid = rotate(rotate_row, rotate_col, cnt)
+    lst = bfs(grid)
     lst.sort(key=ordering_rule)
     curr_money = get_money(lst)
 
