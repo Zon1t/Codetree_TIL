@@ -1,7 +1,4 @@
-# 다른 점? 탐사 결과마다 출력을 찍어야 한다는거.
-# 이게 완탐이 되나 싶었는데 K도 10이고 5*5면 할만한 것 같기도 하다.. 복사 해가면서 돌려야 하나?
-# 우선순위를 잘 따지자. (획득 가치, 각작, 열작, 행작), 가치를 따질 때에는 최소 3조각 이상.
-# 연쇄 작용이 이제 메인 테마인가 계속 나오는 것 같다. 부족한 조각은 없으니 잘 채워보자.
+# 큐 안 쓰는 게 더 낫나?
 
 from collections import deque
 
@@ -14,10 +11,8 @@ def in_range(row, col):
     return 0 <= row < 5 and 0 <= col < 5
 
 
-def bfs(find_grid, set_return=False):
-    if set_return:
-        return_set.clear()
-
+def bfs(find_grid):
+    Q = deque()
     return_value = 0
     visited = [[False] * 5 for _ in range(5)]
     for row in range(5):
@@ -26,16 +21,12 @@ def bfs(find_grid, set_return=False):
                 continue
 
             temp = 0
-            temp_set = set()
             visited[row][col] = True
 
-            Q = deque([(row, col)])
+            Q.append((row, col))
             while Q:
                 curr_row, curr_col = Q.popleft()
                 temp += 1
-
-                if set_return:
-                    temp_set.add((curr_row, curr_col))
 
                 for d in range(4):
                     next_row, next_col = curr_row + dr[d], curr_col + dc[d]
@@ -50,28 +41,29 @@ def bfs(find_grid, set_return=False):
 
             if temp < 3:
                 continue
-            else:
-                if set_return:
-                    return_set.update(temp_set)
-                return_value += temp
+            return_value += temp
 
     return return_value
 
 
-def rotate(sr, sc, cnt_):
-    temp_grid = [row[sc:sc + 3] for row in grid[sr:sr + 3]]
-    if cnt_ == 1:
-        temp_grid = [row[::-1] for row in zip(*temp_grid)]
-    elif cnt_ == 2:
-        temp_grid = [row[::-1] for row in temp_grid[::-1]]
-    else:
-        temp_grid = [row[:] for row in zip(*temp_grid)][::-1]
+def swap(*lst, reverse=False):
+    if reverse: return (lst[-1],)+lst[:-1]
+    else: return lst[1:]+(lst[0],)
 
+
+def rotate(sr, sc, cnt_):
     return_grid = [row[:] for row in grid]
 
-    for delta_row in range(3):
-        for delta_col in range(3):
-            return_grid[sr + delta_row][sc + delta_col] = temp_grid[delta_row][delta_col]
+    if cnt_ == 2:
+        return_grid[sr][sc], return_grid[sr+2][sc+2] = swap(return_grid[sr][sc], return_grid[sr+2][sc+2])
+        return_grid[sr][sc+1], return_grid[sr+2][sc+1] = swap(return_grid[sr][sc+1], return_grid[sr+2][sc+1])
+        return_grid[sr][sc+2], return_grid[sr+2][sc] = swap(return_grid[sr][sc+2], return_grid[sr+2][sc])
+        return_grid[sr+1][sc+2], return_grid[sr+1][sc] = swap(return_grid[sr+1][sc+2], return_grid[sr+1][sc])
+    else:
+        return_grid[sr][sc], return_grid[sr+2][sc], return_grid[sr+2][sc+2], return_grid[sr][sc+2] = \
+            swap(return_grid[sr][sc], return_grid[sr+2][sc], return_grid[sr+2][sc+2], return_grid[sr][sc+2], reverse=cnt_==3)
+        return_grid[sr][sc+1], return_grid[sr+1][sc], return_grid[sr+2][sc+1], return_grid[sr+1][sc+2] = \
+            swap(return_grid[sr][sc+1], return_grid[sr+1][sc], return_grid[sr+2][sc+1], return_grid[sr+1][sc+2], reverse=cnt_==3)
 
     return return_grid
 
@@ -91,9 +83,39 @@ def priority():
 
 
 def get_money():
-    for row, col in return_set:
-        grid[row][col] = 0
-    return len(return_set)
+    total_money = 0
+    visited = [[False] * 5 for _ in range(5)]
+    for row in range(5):
+        for col in range(5):
+            if visited[row][col]:
+                continue
+
+            visited[row][col] = True
+            cnt, pointer = 1, 0
+
+            check_lst = [(row, col)]
+            while pointer < cnt:
+                curr_row, curr_col = check_lst[pointer]
+                pointer += 1
+
+                for d in range(4):
+                    next_row, next_col = curr_row + dr[d], curr_col + dc[d]
+                    if not in_range(next_row, next_col) or visited[next_row][next_col]:
+                        continue
+                    if grid[next_row][next_col] != grid[curr_row][curr_col]:
+                        continue
+                    visited[next_row][next_col] = True
+                    check_lst.append((next_row, next_col))
+                    cnt += 1
+
+            if cnt < 3:
+                continue
+
+            total_money += cnt
+            for row, col in check_lst:
+                grid[row][col] = 0
+
+    return total_money
 
 
 def fill():
@@ -121,7 +143,7 @@ grid = [list(map(int, input().split())) for _ in range(5)]
 
 fill_nums = list(map(int, input().split()))
 fill_pointer = 0
-return_set = set()
+
 # ==============================================================
 # 실행부
 
@@ -139,14 +161,13 @@ for _ in range(K):
     # 3. 유물 획득하기.
     total_earn = 0
     while True:
-        bfs(grid, True)
+        money = get_money()
 
-        earn = 0
-        if return_set:
-            total_earn += get_money()
-            fill()
-        else:
+        if not money:
             break
+
+        total_earn += money
+        fill()
 
     # 4. 정답 기록하기.
     answer.append(total_earn)
