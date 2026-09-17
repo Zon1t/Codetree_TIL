@@ -1,126 +1,136 @@
-# grow -> burnsick -> find - fire(update)
-# 격자에 대한 연산을 미리미리 해두면 좋을 것 같다.
+# 3:53 시작
+# 놓칠 수 있을 법한 조건들이 많이 있는 것 같다. 이를 염두해두고 잘 문제를 풀어보자.
+# 나무 성장 / 번식 -> 모두 동시에 일어남.
+# 제초제는 최대한 많이 줄일 수 있는 위치에 뿌린다.
+# grow -> burnsick -> find -> fire
+# 제초제 유지되는 시간 따로 관리하기. 박멸한 나무의 수 실시간으로 기록하기.
 
-# 십자
-dr1 = [0, 1, 0, -1]
-dc1 = [1, 0, -1, 0]
 
-# 대각
-dr2 = [-1, 1, 1, -1]
-dc2 = [1, 1, -1, -1]
+dr = [0, 1, 0, -1]
+dc = [1, 0, -1, 0]
+
 
 def in_range(row, col):
     return 0 <= row < N and 0 <= col < N
 
+
 def grow():
     for row in range(N):
         for col in range(N):
-            if grid[row][col] > 0:
-                burnsick_table.clear()
+            if grid[row][col] < 1:
+                continue
+            for d in range(2):
+                next_row, next_col = row + dr[d], col + dc[d]
 
-                cnt, empty = 0, 0
-                for d in range(4):
-                    nr, nc = row + dr1[d], col + dc1[d]
-                    if not in_range(nr, nc) or grid[nr][nc] == -1 or check_table[nr][nc] >= t:
-                        continue
+                if not in_range(next_row, next_col):
+                    continue
+                if grid[next_row][next_col] < 1:
+                    continue
 
-                    if grid[nr][nc] == 0:
-                        empty += 1
-                        burnsick_table.append((nr, nc))
-                    else:
-                        cnt += 1
+                grid[row][col] += 1
+                grid[next_row][next_col] += 1
 
-                if cnt:
-                    grid[row][col] += cnt
-                if empty:
-                    burnsick_cnt = grid[row][col] // empty
-                    for br, bc in burnsick_table:
-                        burnsick_dict[(br, bc)] = burnsick_dict.get((br, bc), 0) + burnsick_cnt
 
 def burnsick():
-    for (row, col), cnt in burnsick_dict.items():
-        grid[row][col] += cnt
-    burnsick_dict.clear()
-
-def find():
-    max_cnt = 0
-    target_row, target_col = -1, -1
+    burnsick_grid = [[0] * N for _ in range(N)]
     for row in range(N):
         for col in range(N):
-
             if grid[row][col] < 1:
                 continue
 
-            temp = grid[row][col]
+            grow_lst = []
+            cnt = 0
             for d in range(4):
-                for k in range(1, L+1):
-                    next_row, next_col = row + dr2[d] * k, col + dc2[d] * k
+                next_row, next_col = row + dr[d], col + dc[d]
+                if not in_range(next_row, next_col) or grid[next_row][next_col] != 0:
+                    continue
+                if fired[next_row][next_col] >= turn:
+                    continue
+
+                grow_lst.append((next_row, next_col))
+                cnt += 1
+
+            if not cnt:
+                continue
+
+            grow_amount = grid[row][col] // cnt
+            for gr, gc in grow_lst:
+                burnsick_grid[gr][gc] += grow_amount
+
+    for row in range(N):
+        for col in range(N):
+            grid[row][col] += burnsick_grid[row][col]
+
+
+def find():
+    standard = (0, 0, 0)
+    for row in range(N):
+        for col in range(N):
+            if grid[row][col] < 1:
+                continue
+            temp = grid[row][col]
+            for delta_row, delta_col in ((1, 1), (1, -1), (-1, 1), (-1, -1)):
+                for k in range(1, K+1):
+                    next_row, next_col = row + delta_row*k, col + delta_col*k
                     if not in_range(next_row, next_col) or grid[next_row][next_col] < 1:
                         break
                     temp += grid[next_row][next_col]
+            if standard < (temp, -row, -col):
+                standard = (temp, -row, -col)
 
-            if temp > max_cnt:
-                target_row, target_col = row, col
-                max_cnt = temp
+    return -standard[1], -standard[2]
 
-    return target_row, target_col
 
-def kill_update(row, col):
-    global answer
-
-    rip_day = t+Y
-    answer += grid[row][col]
-    grid[row][col] = 0
-    check_table[row][col] = rip_day
-    for d in range(4):
-        for k in range(1, L+1):
-            next_row, next_col = row + dr2[d] * k, col + dc2[d] * k
-
+def fire(start_row, start_col):
+    temp = grid[start_row][start_col]
+    if temp < 1:
+        return 0
+    grid[start_row][start_col] = 0
+    fired[start_row][start_col] = turn + C
+    for delta_row, delta_col in ((1, 1), (1, -1), (-1, 1), (-1, -1)):
+        for k in range(1, K + 1):
+            next_row, next_col = start_row + delta_row * k, start_col + delta_col * k
             if not in_range(next_row, next_col) or grid[next_row][next_col] == -1:
                 break
-            if grid[next_row][next_col] == 0:
-                check_table[next_row][next_col] = rip_day
+
+            fired[next_row][next_col] = turn + C
+            if grid[next_row][next_col] > 0:
+                temp += grid[next_row][next_col]
+                grid[next_row][next_col] = 0
+            elif grid[next_row][next_col] == 0:
                 break
-
-            answer += grid[next_row][next_col]
-            grid[next_row][next_col] = 0
-            check_table[next_row][next_col] = rip_day
+    return temp
 
 
-def custom_print():
-    print(t)
-    print('-------------------')
-    for row in check_table:
-        print(*row)
-    print('-------------------')
+def print_grid():
+    print(f'----namu_grid----')
     for row in grid:
         print(*row)
-    print('-------------------')
+    print(f'----kill_grid----')
+    for row in fired:
+        print(*row)
+    print(f'{turn}_answer:{answer}')
 
-
-# 격자 size, simulation 진행 턴 수, 확산 범위, 제초제가 남아있는 년수
-N, T, L, Y = map(int, input().split())
+# =========================================================
+# 입력
+N, M, K, C = map(int, input().split())
 grid = [list(map(int, input().split())) for _ in range(N)]
+fired = [[0] * N for _ in range(N)]
 
-# 필요 변수 선언.
-check_table = [[-1] * N for _ in range(N)]       # 교차 검증시 사용. 새로 뿌려지면 초기화라서
-
+# =========================================================
+# 실행
 answer = 0
-burnsick_dict, burnsick_table = dict(), []
-for t in range(T):
-
-    # 1. 나무 성장시키기.
+for turn in range(1, M+1):
+    # 1. 나무 성장
     grow()
 
-    # 2. 나무 번식시키기.
+    # 2. 나무 번식
     burnsick()
 
-    # 3. 살포 위치 찾기
-    row, col = find()
-    if row != -1:
-        # 찾으면 업데이트
-        kill_update(row, col)
-    else:
-        break
+    # 3. 위치 찾기
+    kill_row, kill_col = find()
+
+    # 4. 살포하기
+    answer += fire(kill_row, kill_col)
 
 print(answer)
