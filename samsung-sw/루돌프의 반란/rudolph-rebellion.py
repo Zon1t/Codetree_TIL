@@ -86,19 +86,7 @@ def gorani_move():
     # 고라니 정보 업데이트 + 충돌 확인
     gorani_row, gorani_col = gorani_row + dr[next_dir], gorani_col + dc[next_dir]
     if santa_grid[gorani_row][gorani_col] != -1:
-        gorani_accident(santa_grid[gorani_row][gorani_col], next_dir)
-
-
-def gorani_accident(santa_idx, d):
-    # 충돌 처리
-    santa_row, santa_col = santa_lst[santa_idx]
-    santa_grid[santa_row][santa_col] = -1
-    scores[santa_idx] += C
-    sturn[santa_idx] = turn+2
-
-    # 낙하 지점 확인. 분기문 적절하게 작성.
-    next_row, next_col = santa_row + dr[d]*C, santa_col + dc[d]*C
-    interaction(santa_idx, next_row, next_col, d)
+        accident(santa_grid[gorani_row][gorani_col], next_dir, True)
 
 
 def santa_move(idx):
@@ -123,22 +111,22 @@ def santa_move(idx):
     # 이동 지점에 대한 충돌 여부 확인.
     curr_row, curr_col = curr_row+dr[next_dir], curr_col+dc[next_dir]
     if curr_row == gorani_row and curr_col == gorani_col:
-        santa_accident(idx, next_dir)
+        accident(idx, next_dir, False)
     else:
         santa_grid[curr_row][curr_col] = idx
         santa_lst[idx] = (curr_row, curr_col)
 
 
-def santa_accident(santa_idx, d):
+def accident(santa_idx, d, attack_gorani):
     # 충돌 처리
     santa_row, santa_col = santa_lst[santa_idx]
     santa_grid[santa_row][santa_col] = -1
-    scores[santa_idx] += D
-    sturn[santa_idx] = turn+2
+    scores[santa_idx] += C if attack_gorani else D
+    stun[santa_idx] = turn+2
 
-    # 낙하 지점에 의거한 분기문 처리
-    next_row, next_col = santa_row - dr[d]*(D-1), santa_col - dc[d]*(D-1)
-    interaction(santa_idx, next_row, next_col, (d+2)%4)
+    # 낙하 지점 확인. 분기문 적절하게 작성.
+    next_row, next_col = santa_row + dr[d]*(C if attack_gorani else 1-D), santa_col + dc[d]*(C if attack_gorani else 1-D)
+    interaction(santa_idx, next_row, next_col, (d if attack_gorani else (d+2) % 4))
 
 
 def interaction(attack_idx, row, col, direction):
@@ -191,7 +179,7 @@ for _ in range(P):
 
 santa_out = [False] * P
 scores = [0] * P
-sturn = [0] * P
+stun = [0] * P
 
 # ========================================================
 # 실행부
@@ -204,22 +192,22 @@ for turn in range(1, M+1):
     # 2. 산타 움직이기.
     for idx in range(P):
         # 경기장에서 벗어난 산타 or 기절했으면 넘기기.
-        if santa_out[idx] or turn < sturn[idx]:
+        if santa_out[idx] or turn < stun[idx]:
             continue
 
         santa_move(idx)
 
-    # 3. 턴 종료
     keep_going = False
+    # 3. 턴 종료
     for idx in range(P):
         if santa_out[idx]:
             continue
         scores[idx] += 1
         keep_going = True
 
-    # 종료 체크
+    # 조기 종료 체크
     if not keep_going:
         break
 
-# 정답 출력
+# 정답 출력하기
 print(*scores)
