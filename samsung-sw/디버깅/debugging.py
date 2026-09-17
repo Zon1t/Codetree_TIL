@@ -1,64 +1,94 @@
-# 그럴듯한? 풀이 방법이 떠오르지 않는다.. grid로 입력 받고
-# 뭔가 논리적으로 풀 수 있을 것 같은 문제긴 한데, 완탐으로 해야 할 것도 같다.
-# 완전 탐색이 이루어질 수 있는 사이즈인가? 300C3.. 될 것 같기도 하고?
-# 그냥 백트래킹 쓰자.
+# 10:54 시작 중간에 5분 탈주
+# add -> check 로 가보자.
+# 어느 방향으로든 나갔으면 다시 들어오는 선이 존재 해야함. 즉 모든 인접한 사람 사이 라인의 개수는
+# 짝수여야 함을 이용해보자. 다 짝수라고 되는건 아님! 최적화해볼까?
 
-def backtrack(row, cnt, prev, human, apply):
+
+def check():
+    human = target[:]
+    for row in range(H):
+        for col in range(N-1):
+            if lines[row][col]:
+                human[col], human[col+1] = human[col+1], human[col]
+
+    return human == target
+
+
+def backtrack(cnt, col):
     global answer
-
-    # 진행 X
-    if answer <= cnt or cnt == 4:
+    if cnt == target_cnt:
+        if check() and cnt < answer:
+            answer = cnt
         return
 
-    # 정답 체크
-    if row == N:
-        if human == target:
-            if cnt < answer:
-                answer = cnt
+    if col == N-1:
         return
 
-    # 코드 꼬이게 하는 만악의 근원
-    if apply == 0:
-        for col in default[row]:
-            human[col], human[col+1] = human[col+1], human[col]
+    for row in can_lst[col]:
+        if not lines[row][col]:
+            if col != 0 and lines[row][col-1]:
+                continue
 
-    # 고르기
-    for col in possible[row]:
-        if col <= prev+1:
-            continue
+            lines[row][col] = 1
+            line_cnt[col] += 1
 
-        human[col], human[col+1] = human[col+1], human[col]
-        # 같은 열에서 더 고르기
-        backtrack(row, cnt+1, col, human, 1)
-        human[col], human[col+1] = human[col+1], human[col]
+            if line_cnt[col]%2 == 0:
+                backtrack(cnt+1, col+1)
+                backtrack(cnt+1, col)
+            else:
+                backtrack(cnt+1, col)
 
-    # 현재 열에서 안고른 경우
-    backtrack(row+1, cnt, -2, human, 0)
+            lines[row][col] -= 1
+            line_cnt[col] -= 1
 
-    # 이것까지.. 해줘야한다.. 이거때매 몇분을 버렸냐
-    if apply == 0:
-        for col in default[row]:
-            human[col], human[col + 1] = human[col + 1], human[col]
+    backtrack(cnt, col+1)
 
 
-M, K, N = map(int, input().split())
-grid = [[0] * (M-1) for _ in range(N)]
-default = [[] for _ in range(N)]
-for _ in range(K):
-    r, c = map(lambda x: int(x)-1, input().split())
-    grid[r][c] = 1
-    default[r].append(c)
+def print_grid():
+    print(f'----grid----')
+    for row in lines:
+        print(*row)
 
-possible = [[] for _ in range(N)]
-for row in range(N):
-    for col in range(M-1):
-        left = True if col == 0 or grid[row][col-1] == 0 else False
-        right = True if col == M-2 or grid[row][col+1] == 0 else False
-        if left and right and col not in default[row]:
-            possible[row].append(col)
+# =========================================================
+# 입력받기
 
-answer = 300
-target = list(range(1, M+1))
-backtrack(0, 0, -2, list(range(1, M+1)), 0)
+N, M, H = map(int, input().split())
+lines = [[0] * (N-1) for _ in range(H)]
+line_cnt = [0] * (N-1)
 
-print(answer if answer != 300 else -1)
+can_cnt = [1, 3] if M % 2 else [0, 2]
+for _ in range(M):
+    row, col = map(lambda x: int(x)-1, input().split())
+    lines[row][col] = 1
+    line_cnt[col] += 1
+
+# =========================================================
+# 세팅
+
+can_lst = [[] for _ in range(N-1)]
+for col in range(N-1):
+    for row in range(H):
+        left, right = col-1, col+1
+        flag1, flag2 = False, False
+
+        if left < 0 or not lines[row][left]:
+            flag1 = True
+        if right > N-2 or not lines[row][right]:
+            flag2 = True
+
+        if flag1 and flag2:
+            can_lst[col].append(row)
+
+target = list(range(1, N+1))
+
+# =========================================================
+# 실행부
+
+answer = 4
+for target_cnt in can_cnt:
+    backtrack(0, 0)
+
+    if answer != 4:
+        break
+
+print(answer if answer != 4 else -1)
