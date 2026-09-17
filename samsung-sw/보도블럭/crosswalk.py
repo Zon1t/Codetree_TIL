@@ -1,59 +1,49 @@
-# 적절한 cnt 세팅으로 경사로 길이를 체크하면 될 듯 싶다. 끝난 경우에도 cnt 확인하기.
-# 행, 열에 대해서 모두 수햄. 내가 구현하는 로직이 경사로 설치 제한 조건을 잘 반영하는지 확인하기.
-# 크게 문제될 부분은 없을 것 같다?
+# 11:46 시작
+# 경사로 조건 잘 따지면 되는 문제.
+# 놓을 수 없는 조건 : 높이 차가 1보다 큼, 주어진 경사로 길이만큼 연속X, 경사로 again
+# 이를 따지기 위해 잘 순회하면서 경사로를 만들어보자
 
-def check(idx, dr, dc):
-    # 필요 변수들 설정.
-    curr_row, curr_col = (0, idx) if dr else (idx, 0)
-    curr_height = grid[curr_row][curr_col]
+dr = [0, 1]
+dc = [1, 0]
+
+
+def check(start_row, start_col, d):
+    curr_num, cnt = grid[start_row][start_col], 1
     can_put = True
-    cnt = 1
 
-    # simulation 진행
-    for _ in range(1, N):
-        curr_row, curr_col = curr_row + dr, curr_col + dc
-
-        # 놓을 수 있는 요건 초기화
+    curr_row, curr_col = start_row+dr[d], start_col+dc[d]
+    while curr_row < N and curr_col < N:
+        # 체크
         if not can_put and cnt == L:
             can_put = True
             cnt = 0
 
-        # 각 분기별 수행 로직.
-        if curr_height == grid[curr_row][curr_col]:
+        if grid[curr_row][curr_col] == curr_num:
             cnt += 1
-        elif curr_height+1 == grid[curr_row][curr_col]:
-            if cnt >= L and can_put:
-                curr_height = grid[curr_row][curr_col]
-                cnt = 1
-            else:
-                return False
-        elif curr_height-1 == grid[curr_row][curr_col]:
-            # 진행중인 보도블럭이 있으면 안됨.
+        elif grid[curr_row][curr_col] == curr_num-1:
             if not can_put:
                 return False
-
-            curr_height = grid[curr_row][curr_col]
             can_put = False
-            cnt = 1
+            curr_num, cnt = grid[curr_row][curr_col], 1
+        elif grid[curr_row][curr_col] == curr_num+1:
+            if cnt < L or not can_put:
+                return False
+            curr_num, cnt = grid[curr_row][curr_col], 1
         else:
             return False
 
+        curr_row, curr_col = curr_row + dr[d], curr_col + dc[d]
+
     if not can_put and cnt < L:
         return False
-
     return True
 
 N, L = map(int, input().split())
 grid = [list(map(int, input().split())) for _ in range(N)]
 
 answer = 0
-for i in range(N):
-    # 열 방향으로 이동하며 체크
-    if check(i, 1, 0):
-        answer += 1
-
-    # 행 방향으로 이동하며 체크
-    if check(i, 0, 1):
-        answer += 1
+for idx in range(N):
+    answer += check(idx, 0, 0)
+    answer += check(0, idx, 1)
 
 print(answer)
