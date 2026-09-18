@@ -1,97 +1,74 @@
-# 주사위 보이는대로 위, 앞, 왼, 뒤, 오, 아래 순서 idx fix하기.
-# -1 idx에 있는 숫자를 기준으로 위치를 이동시켜가며 점수 연산.
-# 점수를 연산하는 것에 있어, 중복 연산이 많아질 수 있을 것. 미리 연산 후 grid를 업데이트하자.
-# *격자 튕기는 로직 잘 구현하기
+# 시작 15:02
+# score_grid 따로 업데이트 해주기. 주사위 인덱스 관리 잘하면 될듯..
+# 그 이외 특이사항은 없어보인다? 방향 잘 꺾고 하면 될듯
 
-from collections import deque
 
 dr = [0, 1, 0, -1]
 dc = [1, 0, -1, 0]
 
+
 def in_range(row, col):
     return 0 <= row < N and 0 <= col < N
 
-def bfs(sr, sc):
 
-    Q.append((sr, sc))
-    update_set.clear()
-
-    cnt = 0
-    while Q:
-        cr, cc = Q.popleft()
-
-        update_set.add((cr, cc))
-        cnt += 1
-
-        for d in range(4):
-            nr, nc = cr + dr[d], cc + dc[d]
-            if not in_range(nr, nc) or score_grid[nr][nc] or grid[nr][nc] != grid[cr][cc]:
-                continue
-            score_grid[nr][nc] = 1
-            Q.append((nr, nc))
-
-    update_value = grid[sr][sc] * cnt
-    for row, col in update_set:
-        score_grid[row][col] = update_value
-
-def chage():
-    if curr_dir == 0:
-        curr_status[0], curr_status[2], curr_status[4], curr_status[5] = \
-            curr_status[2], curr_status[5], curr_status[0], curr_status[4]
-    elif curr_dir == 1:
-        curr_status[0], curr_status[1], curr_status[3], curr_status[5] = \
-            curr_status[3], curr_status[0], curr_status[5], curr_status[1]
-    elif curr_dir == 2:
-        curr_status[0], curr_status[2], curr_status[4], curr_status[5] = \
-            curr_status[4], curr_status[0], curr_status[5], curr_status[2]
-    else:
-        curr_status[0], curr_status[1], curr_status[3], curr_status[5] = \
-            curr_status[1], curr_status[5], curr_status[0], curr_status[3]
-
-def find_dir():
-    global curr_dir
-
-    if curr_status[-1] > grid[curr_row][curr_col]:
-        curr_dir = (curr_dir + 1) % 4
-    elif curr_status[-1] < grid[curr_row][curr_col]:
-        curr_dir = (curr_dir - 1) % 4
-
+def move():
     next_row, next_col = curr_row + dr[curr_dir], curr_col + dc[curr_dir]
+    next_dir = curr_dir
     if not in_range(next_row, next_col):
-        curr_dir = (curr_dir + 2) % 4
+        next_dir = (curr_dir + 2) % 4
+        next_row, next_col = curr_row + dr[next_dir], curr_col + dc[next_dir]
+    
+    if next_dir == 0:
+        dice[0], dice[2], dice[5], dice[4] = dice[2], dice[5], dice[4], dice[0]
+    elif next_dir == 1:
+        dice[0], dice[1], dice[5], dice[3] = dice[3], dice[0], dice[1], dice[5]
+    elif next_dir == 2:
+        dice[0], dice[2], dice[5], dice[4] = dice[4], dice[0], dice[2], dice[5]
+    else:
+        dice[0], dice[1], dice[5], dice[3] = dice[1], dice[5], dice[3], dice[0]
+    
+    if grid[next_row][next_col] < dice[-1]:
+        next_dir = (next_dir+1)%4
+    elif grid[next_row][next_col] > dice[-1]:
+        next_dir = (next_dir-1)%4
+    
+    return next_row, next_col, next_dir
+    
 
-
-N, K = map(int, input().split())
+N, M = map(int, input().split())
 grid = [list(map(int, input().split())) for _ in range(N)]
+dice = [1, 2, 4, 5, 3, 6]
 
-# 전역변수 선언
-curr_status = [1, 2, 4, 5, 3, 6]    # 다 맞게 했는데 얘를 잘못 적냐
-curr_row, curr_col = 0, 0
-curr_dir = 0
-
-# grid 업데이트
-Q = deque()
-update_set = set()
-score_grid = [[0] * N for _ in range(N)]
+visited = [[False] * N for _ in range(N)]
 for row in range(N):
     for col in range(N):
-
-        if score_grid[row][col]:
+        if visited[row][col]:
             continue
+        visited[row][col] = True
+        Q = [(row, col)]
+        cnt, pointer = 1, 0
+        while pointer < cnt:
+            for d in range(4):
+                next_row, next_col = Q[pointer][0] + dr[d], Q[pointer][1] + dc[d]
 
-        score_grid[row][col] = 1
-        bfs(row, col)
+                if not in_range(next_row, next_col) or visited[next_row][next_col]:
+                    continue
+                if grid[next_row][next_col] != grid[Q[pointer][0]][Q[pointer][1]]:
+                    continue
 
+                visited[next_row][next_col] = True
+                Q.append((next_row, next_col))
+                cnt += 1
+            pointer += 1
+        
+        write_num = grid[row][col]*cnt
+        for qr, qc in Q:
+            visited[qr][qc] = write_num
+
+curr_row, curr_col, curr_dir = 0, 0, 0
 answer = 0
-for _ in range(K):
-    # 1. 좌표 업데이트 + 점수 반영
-    curr_row, curr_col = curr_row + dr[curr_dir], curr_col + dc[curr_dir]
-    answer += score_grid[curr_row][curr_col]
-
-    # 2. 주사위 상태 변화시켜 주기
-    chage()
-
-    # 3. 다음 방향 모색
-    find_dir()
+for _ in range(M):
+    curr_row, curr_col, curr_dir = move()
+    answer += visited[curr_row][curr_col]
 
 print(answer)
