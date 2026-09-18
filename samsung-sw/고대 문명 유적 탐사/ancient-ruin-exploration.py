@@ -75,23 +75,26 @@ def small_bfs(lst):
     return return_lst
 
 
+def rotate(sr, sc, d):
+    narr = [lst[:] for lst in grid]
+    steps = 3
 
-def rotate(sr, sc, cnt_):
-    temp_grid = [row[sc:sc + 3] for row in grid[sr:sr + 3]]
-    if cnt_ == 1:
-        temp_grid = [row[::-1] for row in zip(*temp_grid)]
-    elif cnt_ == 2:
-        temp_grid = [row[::-1] for row in temp_grid[::-1]]
-    else:
-        temp_grid = [row[:] for row in zip(*temp_grid)][::-1]
+    for i in range(steps):
+        for j in range(steps):
 
-    return_grid = [row[:] for row in grid]
+            if d == 1:      # 90도
+                oi = steps - j - 1
+                oj = i
+            elif d == 2:    # 180도
+                oi = steps - i - 1
+                oj = steps - j - 1
+            elif d == 3:    # 270도
+                oi = j
+                oj = steps - i - 1
 
-    for delta_row in range(3):
-        for delta_col in range(3):
-            return_grid[sr + delta_row][sc + delta_col] = temp_grid[delta_row][delta_col]
+            narr[sr + i][sc + j] = grid[sr + oi][sc + oj]
 
-    return return_grid
+    return narr
 
 
 def priority():
@@ -104,8 +107,8 @@ def priority():
 
                 if curr_max < (money, -cnt, -col, -row):
                     curr_max = (money, -cnt, -col, -row)
-    
-    return -curr_max[1], -curr_max[3], -curr_max[2] 
+
+    return -curr_max[1], -curr_max[3], -curr_max[2]
 
 
 def get_money(lst):
