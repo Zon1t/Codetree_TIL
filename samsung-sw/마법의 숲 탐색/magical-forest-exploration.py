@@ -114,10 +114,9 @@ def move(start_row, start_col):
 
 
 def clear():
-    global grid, group_grid
     for row in range(N+3):
         for col in range(M):
-            grid[row][col] = group_grid[row][col] = 0
+            grid[row][col] = 0
 
 
 def print_grid():
