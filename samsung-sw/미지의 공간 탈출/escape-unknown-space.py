@@ -1,3 +1,36 @@
+''' 미지의 공간 탈출 / 20260921 / 체감 난이도 : 플레 5
+소요 시간 : 95분 / 시도 : 1회 / 실행 시간 : 57ms / 메모리 : 17MB
+
+타임 라인 : 구상(38분) - 구현(47분) - 검증(10분)
+
+
+[구상]
+    - 시간의 벽에서의 탈출과 미지의 공간 탈출을 분리해서 생각했다. 둘 다 bfs를 사용하기는 하지만 입체
+    의 경우 적용되는 로직이 전혀 달라야 할 것 같았기 때문이다.
+    - 입체 grid를 펼쳐서 관리하자니 어짜피 하드코딩해야 할 것 같아서 그냥 격자 나눠서 순간이동? 해주는
+    느낌으로 풀이를 진행했다. 해당 과정에서 하드코딩은 필연적이라고 생각했다.
+    - 이상 현상을 어떻게 처리할까에 대해서 고민해보다가 그냥 grid를 하나 더 만들어주는 방식으로 진행하
+    면 되겠다고 판단했다. 사실상 시간의 벽 탈출만 잘하면 크게 문제 없이 해결할 수 있을 것이다.
+
+[구현]
+    - 온갖 수정과 함수 갈아엎기의 연속이였다. 크게 바뀐 점이라면 다음과 같다.
+        1. 시간의 벽 -> 미지의 공간을 convert로 처리하려니 너무 까다로워 진다고 생각하여, 전체 순회
+         로 시간의 벽에서 나올 수 있는 위치를 찾아 관리하고자 했다.
+        2. 시간의 벽에서 각 grid 사이를 이동할 때 그냥 convert 함수에서 다 처리할까 잠깐 고민하다가
+         그냥 좌표만을 변환해주고자 하였다. 이때 next_grid 판별은 위에서 해주었기에 -1일 때는 그냥
+         넘겨도 됐다.
+    - 자잘하게 이상현상 처리에서 부등호를 잘못 쓴다거나, EXIT을 찾음에 있어 순회 조건을 잘못 넣어주는
+    등 실수가 있었다. 그때그때 찍어보면서 로직이 올바르게 작동함을 재차 확인했다.
+
+[검증]
+    - 구상과 구현에서 피가 말린다는 느낌이 들 정도로 생각을 많이 했고, 중간에 계속 심호흡 하면서 검증
+    을 했었다. 출력 함수도 따로 정의해서 필요할 때마다 확인했기에 검증은 문제와 코드만 재차 비교를 하고
+    자 했었다.
+    - 문득 이상 현상이 서로 독립적이라는 말이 눈에 들어왔다. 사실 초반에 대충 grid 찍어보고 넘겼던 부분
+    이라 다시금 생각해보는데, 교차 처리를 하지 않았음을 알게 되었다. 만드는 부분에서 min처리를 해주었고
+    재차 읽어본 후 제출해보게 되었다.
+'''
+
 # 1. 시간의 벽 탈출. 출구가 하나이므로 시간의 벽을 탈출하는 것이 우선시 되어야 한다.
 # 2. 미지의 공간 탈출. 탈출구 4로 이동해야 한다.
 # 이 두 가지를 메인 목표로 하여 차근차근 해결해나가보자.
@@ -71,22 +104,18 @@ def find_start():
 
 
 def convert(curr_grid, curr_row, curr_col, direction):
-    if curr_grid == 0:
+    # 옆면인 경우
+    if curr_grid < 4:
         if direction == 0: return curr_row, 0
         if direction == 1: return curr_row, M-1
-        if direction == 3: return M-1-curr_col, M-1
-    if curr_grid == 1:
-        if direction == 0: return curr_row, 0
-        if direction == 1: return curr_row, M-1
-        if direction == 3: return curr_col, 0
-    if curr_grid == 2:
-        if direction == 0: return curr_row, 0
-        if direction == 1: return curr_row, M-1
-        if direction == 3: return M-1, curr_col
-    if curr_grid == 3:
-        if direction == 0: return curr_row, 0
-        if direction == 1: return curr_row, M-1
-        if direction == 3: return 0, M-1-curr_col
+        
+        # direction이 3인 경우만 남음
+        if curr_grid == 0: return M-1-curr_col, M-1
+        if curr_grid == 1: return curr_col, 0
+        if curr_grid == 2: return M-1, curr_col
+        if curr_grid == 3: return 0, M-1-curr_col
+    
+    # 윗면인 경우
     if curr_grid == 4:
         if direction == 0: return 0, M-1-curr_row
         if direction == 1: return 0, curr_row
