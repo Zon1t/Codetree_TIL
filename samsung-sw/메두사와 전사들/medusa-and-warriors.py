@@ -35,7 +35,7 @@
     발견할 수 있었다. dist_grid를 만드는 과정에서 start_row와 start_col에 각각 er과 er을 할당한
     것이다;; 원래 좌표 변수명은 항상 _row, _col로 끝내는 게 루틴인데 문제에서 사용할 변수도 워낙 많
     고 구현해야 할 부분도 많다보니 변수명을 좀 조잡하게 세팅하긴 했었다. 도대체 테케랑 내가 만든 테케는
-    왜 정상 작독했는지 확인해보니, er과 ec가 애초에 같거나 해당 경로 위에 도착점이 있어 운 좋게 통과
+    왜 정상 작동했는지 확인해보니, er과 ec가 애초에 같거나 해당 경로 위에 도착점이 있어 운 좋게 통과
     한 것.. 어지간하면 익숙한, 정해둔 변수명을 사용하도록 하자.
 
 
@@ -87,14 +87,10 @@ dc = [0, 0, -1, 1]
 #           [[(-1, -1), (0, -1), (None, None)], [(None, None), (0, -1), (None, None)], [(None, None), (0, -1), (1, -1)]],
 #           [[(-1, 1), (0, 1), (None, None)],   [(None, None), (0, 1), (None, None)],  [(None, None), (0, 1), (1, 1)]]]
 
-init_delta = [[(-1, -1), (-1, 0), (-1, 1)],
-              [(1, -1), (1, 0), (1, 1)],
-              [(-1, -1), (0, -1), (1, -1)],
-              [(-1, 1), (0, 1), (1, 1)]]
-deltas = [[[(-1, -1), (-1, 0)], [(-1, 0)], [(-1, 0), (-1, 1)]],
-          [[(1, -1), (1, 0)],   [(1, 0)],  [(1, 0), (1, 1)]],
-          [[(-1, -1), (0, -1)], [(0, -1)], [(0, -1), (1, -1)]],
-          [[(-1, 1), (0, 1)],   [(0, 1)],  [(0, 1), (1, 1)]]]
+deltas = [[[(-1, -1), (-1, 0), (-1, 1)], [(-1, -1), (-1, 0)], [(-1, 0)], [(-1, 0), (-1, 1)]],
+          [[(1, -1), (1, 0), (1, 1)],    [(1, -1), (1, 0)],   [(1, 0)],  [(1, 0), (1, 1)]],
+          [[(-1, -1), (0, -1), (1, -1)], [(-1, -1), (0, -1)], [(0, -1)], [(0, -1), (1, -1)]],
+          [[(-1, 1), (0, 1), (1, 1)],    [(-1, 1), (0, 1)],   [(0, 1)],  [(0, 1), (1, 1)]]]
 
 
 
@@ -139,52 +135,42 @@ def m_move():
             return next_row, next_col
 
 
-def update_grid(row, col, status, direction, check_grid):
-    Q = deque([(row, col)])
-    new_grid = [[0] * N for _ in range(N)]
-    while Q:
-        curr_row, curr_col = Q.popleft()
-        for delta_row, delta_col in deltas[direction][status]:
-            next_row, next_col = curr_row + delta_row, curr_col + delta_col
-            if not in_range(next_row, next_col) or new_grid[next_row][next_col]:
-                continue
-            new_grid[next_row][next_col] = 1
-            Q.append((next_row, next_col))
-
-    for row in range(N):
-        for col in range(N):
-            if new_grid[row][col]:
-                check_grid[row][col] = 1
-
-
 # 돌로 된 전사의 수 반환
 def see():
     watch_grid = [[[0] * N for _ in range(N)] for _ in range(4)]
     max_cnt, max_direction = 0, 0
     for d in range(4):
         curr_cnt = 0
-        check_grid = [[0] * N for _ in range(N)]
+        visited = [[0] * N for _ in range(N)]
 
-        Q = deque([(mr, mc)])
+        Q = deque([(mr, mc, 0)])
         while Q:
-            curr_row, curr_col = Q.popleft()
-            for delta_row, delta_col in init_delta[d]:
+            curr_row, curr_col, curr_status = Q.popleft()
+
+            for delta_row, delta_col in deltas[d][curr_status]:
+
                 next_row, next_col = curr_row + delta_row, curr_col + delta_col
-                if not in_range(next_row, next_col) or watch_grid[d][next_row][next_col]:
-                    continue
-                if check_grid[next_row][next_col]:
+                if not in_range(next_row, next_col) or visited[next_row][next_col]:
                     continue
 
-                watch_grid[d][next_row][next_col] = 1
-                Q.append((next_row, next_col))
-
-                if w_grid[next_row][next_col]:
-                    curr_cnt += w_grid[next_row][next_col]
-                    if dr[d]:
-                        status = 0 if next_col < mc else 1 if next_col == mc else 2
+                visited[next_row][next_col] = True
+                # 용사면 status 유지한 채로 appendleft
+                if curr_status:
+                    Q.appendleft((next_row, next_col, curr_status))
+                # 메두사 시선이면..
+                else:
+                    watch_grid[d][next_row][next_col] = 1
+                    # 용사가 있으면 먼저 봐줘야 하므로 appendleft
+                    if w_grid[next_row][next_col]:
+                        curr_cnt += w_grid[next_row][next_col]
+                        if dr[d]:
+                            status = 1 if next_col < mc else 2 if next_col == mc else 3
+                        else:
+                            status = 1 if next_row < mr else 2 if next_row == mr else 3
+                        Q.appendleft((next_row, next_col, status))
+                    # 아니면 그냥 append
                     else:
-                        status = 0 if next_row < mr else 1 if next_row == mr else 2
-                    update_grid(next_row, next_col, status, d, check_grid)
+                        Q.append((next_row, next_col, 0))
 
         if curr_cnt > max_cnt:
             max_cnt, max_direction = curr_cnt, d
