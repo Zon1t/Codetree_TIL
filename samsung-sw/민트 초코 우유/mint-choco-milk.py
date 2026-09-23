@@ -34,6 +34,8 @@
 # 테케 검증 완료 - 9:58
 # 대표자 먼저 찾으면 아침 과정 스킵 가능. 그래도 굳이 나대지 말자.
 
+from collections import deque
+
 # 주어진 조건에 의거
 dr = [-1, 1, 0, 0]
 dc = [0, 0, -1, 1]
@@ -52,10 +54,11 @@ def lunch():
                 continue
             visited[row][col] = True
 
-            lst = [(row, col)]
-            pointer, cnt, rep = 0, 1, (-how_much[row][col], row, col)
-            while pointer < cnt:
-                curr_row, curr_col = lst[pointer]
+            cnt, rep = 0, (-how_much[row][col], row, col)
+            Q.append((row, col))
+            while Q:
+                curr_row, curr_col = Q.popleft()
+                cnt += 1
                 for d in range(4):
                     next_row, next_col = curr_row + dr[d], curr_col + dc[d]
                     if not in_range(next_row, next_col) or visited[next_row][next_col]:
@@ -63,12 +66,9 @@ def lunch():
                     if trust_grid[curr_row][curr_col] != trust_grid[next_row][next_col]:
                         continue
 
-                    if (-how_much[next_row][next_col], next_row, next_col) < rep:
-                        rep = (-how_much[next_row][next_col], next_row, next_col)
+                    rep = min(rep, (-how_much[next_row][next_col], next_row, next_col))
                     visited[next_row][next_col] = True
-                    lst.append((next_row, next_col))
-                    cnt += 1
-                pointer += 1
+                    Q.append((next_row, next_col))
 
             # 신앙심 모으기.
             rep_row, rep_col = rep[1], rep[2]
@@ -107,10 +107,7 @@ def dinner():
                 how_much[next_row][next_col] += 1
                 remain -= how_much[next_row][next_col]
             else:
-                for i in range(3):
-                    pick = 1<<i
-                    if (my_fav&pick) and not (trust_grid[next_row][next_col]&pick):
-                        trust_grid[next_row][next_col] |= pick
+                trust_grid[next_row][next_col] |= my_fav
                 how_much[next_row][next_col] += remain
                 break
 
@@ -148,6 +145,7 @@ how_much = [list(map(int, input().split())) for _ in range(N)]
 answer_idx = [7, 3, 5, 6, 4, 2, 1]
 cnt_lst = [0, 1, 1, 2, 1, 2, 2, 3]
 change_set = set()
+Q = deque()
 
 # ==================================================
 # 실행부
