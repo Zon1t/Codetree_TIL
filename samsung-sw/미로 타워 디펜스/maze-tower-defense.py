@@ -1,8 +1,7 @@
-# 또또또 달팽이 문제. 이전에 풀었던 문제에서는 이동할 칸이나 이러한 데이터들을 미리 저장하는 방식
-# 을 택했는데, 얘도 좌표를 순서대로 모아둬서 문제를 해결하면 될 듯 싶다. 당연 list로 관리
-# 땡기는 것도 예전에 만들었던 중력 로직? pointer 써서 만드는.. 그런 느낌으로 하면 될 것 같다.
-# 개수를 count해서 다시 미로에 집어넣기.. 얘는 아예 update를 해줘야 하나? or 덮어쓰기 + 0으로
-# 초기화하기? 이건 구현 과정에서 쉬운 방향으로 가져가보자. 점수 update는 죽이면서 진행!
+# 09:08 시작 /[
+# 달팽이 문제. 경로 받아서 하나의 1차원 배열을 선언하고, 이를 바탕으로 문제를 해결하면 될 것.
+# 내가 지워야 하는 좌표와 배열 인덱스는 어떻게 받는가. 참조해야 할 인덱스 그리드를 하나 뽑자.
+
 
 dr = [0, 1, 0, -1]
 dc = [1, 0, -1, 0]
@@ -12,127 +11,122 @@ def in_range(row, col):
     return 0 <= row < N and 0 <= col < N
 
 
+def setting():
+    path, curr_idx = [], end-1
+    visited = [[False]*N for _ in range(N)]
+    idx_grid = [[-1]*N for _ in range(N)]
+    
+    curr_row, curr_col, curr_dir = 0, 0, 0
+    while curr_idx != -1:
+        path.append(grid[curr_row][curr_col])
+        idx_grid[curr_row][curr_col] = curr_idx
+        visited[curr_row][curr_col] = True
+
+        curr_idx -= 1
+        if not in_range(curr_row+dr[curr_dir], curr_col+dc[curr_dir]) or \
+                visited[curr_row+dr[curr_dir]][curr_col+dc[curr_dir]]:
+            curr_dir = (curr_dir+1)%4
+        curr_row, curr_col = curr_row+dr[curr_dir], curr_col+dc[curr_dir]
+
+    return idx_grid, path[::-1]
+
+
 def shot(d, p):
     global answer
     for k in range(1, p+1):
-        shot_row, shot_col = center + dr[d] * k, center + dc[d] * k
+        kill_row, kill_col = center+dr[d]*k, center+dc[d]*k
+        target_idx = index_grid[kill_row][kill_col]
+        answer += path[target_idx]
+        path[target_idx] = 0
 
-        if not in_range(shot_row, shot_col):
-            break
-
-        answer += grid[shot_row][shot_col]
-        grid[shot_row][shot_col] = 0
 
 def push():
     pointer = 0
-    for idx in range(end_idx):
-        if grid[ordered_position[idx][0]][ordered_position[idx][1]] != 0:
-            if pointer != idx:
-                grid[ordered_position[idx][0]][ordered_position[idx][1]], grid[ordered_position[pointer][0]][ordered_position[pointer][1]] = \
-                    grid[ordered_position[pointer][0]][ordered_position[pointer][1]], grid[ordered_position[idx][0]][ordered_position[idx][1]]
+    for i in range(end):
+        if path[i]:
+            if pointer != i:
+                path[pointer], path[i] = path[i], path[pointer]
             pointer += 1
 
 
-def check():
+def kill_check():
     global answer
-    cnt, curr_num, is_killed = 0, -1, False
-    final_idx = end_idx
-    for idx in range(end_idx):
-        if grid[ordered_position[idx][0]][ordered_position[idx][1]] == 0:
-            final_idx = idx
+    cnt, target, is_killed = 1, path[0], False
+    this_end = end
+    for i in range(1, end):
+        if path[i] == 0:
+            this_end = i
             break
 
-        if curr_num != grid[ordered_position[idx][0]][ordered_position[idx][1]]:
-            if cnt >= 4:
-                is_killed = True
-                answer += cnt * curr_num
-                for kill_idx in range(idx-cnt, idx):
-                    grid[ordered_position[kill_idx][0]][ordered_position[kill_idx][1]] = 0
-            cnt, curr_num = 1, grid[ordered_position[idx][0]][ordered_position[idx][1]]
-        else:
+        if path[i] == target:
             cnt += 1
+        else:
+            if cnt >= 4:
+                answer += cnt * target
+                is_killed = True
+                for kill_idx in range(i-cnt, i):
+                    path[kill_idx] = 0
+            cnt, target = 1, path[i]
 
-    # 마지막 남아있는 것 확인도 잊지 말기!
     if cnt >= 4:
+        answer += cnt * target
         is_killed = True
-        answer += cnt * curr_num
-        for kill_idx in range(final_idx-cnt, final_idx):
-            grid[ordered_position[kill_idx][0]][ordered_position[kill_idx][1]] = 0
+        for kill_idx in range(this_end-cnt, this_end):
+            path[kill_idx] = 0
 
     return is_killed
 
 
 def update():
-    cnt, curr_num = 1, grid[ordered_position[0][0]][ordered_position[0][1]]
-
-    if curr_num == 0:
-        return
-
-    write_lst = []
-    for idx in range(1, end_idx):
-        if grid[ordered_position[idx][0]][ordered_position[idx][1]] == 0:
+    new_path = [0] * end
+    cnt, target, pointer = 1, path[0], 0
+    for i in range(1, end):
+        if pointer >= end or path[i] == 0:
             break
 
-        if curr_num != grid[ordered_position[idx][0]][ordered_position[idx][1]]:
-            write_lst.append(cnt)
-            write_lst.append(curr_num)
-            cnt, curr_num = 1, grid[ordered_position[idx][0]][ordered_position[idx][1]]
-        else:
+        if path[i] == target:
             cnt += 1
+        else:
+            new_path[pointer] = cnt
+            new_path[pointer+1] = target
+            pointer += 2
 
-    if cnt:
-        write_lst.append(cnt)
-        write_lst.append(curr_num)
+            cnt, target = 1, path[i]
 
-    cut_idx = min(len(write_lst), end_idx)
-    for idx in range(cut_idx):
-        grid[ordered_position[idx][0]][ordered_position[idx][1]] = write_lst[idx]
+    if cnt and target != 0 and pointer < end:
+        new_path[pointer] = cnt
+        new_path[pointer+1] = target
 
-    if cut_idx < end_idx:
-        for idx in range(cut_idx, end_idx):
-            grid[ordered_position[idx][0]][ordered_position[idx][1]] = 0
+    return new_path
 
 
-def print_grid():
-    for row in grid:
-        print(*row)
+# ===============================================================
+# 세팅
 
-N, M = map(int, input().split())
-center, end_idx = N >> 1, N**2 - 1
+N, K = map(int, input().split())
+center, end = N >> 1, N**2-1
+
 grid = [list(map(int, input().split())) for _ in range(N)]
+index_grid, path = setting()
 
-# 초기 세팅하기.
-cnt_lst = [i//2+1 for i in range(2*N-2)] + [N-1]
-ordered_position = []   # 아마 핵심이 될 듯 싶다.
-curr_row, curr_col, curr_dir = center, center, 2
-curr_cnt, curr_pointer = 0, 0
-while True:
-    curr_row, curr_col = curr_row + dr[curr_dir], curr_col + dc[curr_dir]
-    curr_cnt += 1
-    ordered_position.append((curr_row, curr_col))
-
-    if curr_row == 0 and curr_col == 0:
-        break
-
-    if curr_cnt == cnt_lst[curr_pointer]:
-        curr_cnt = 0
-        curr_pointer += 1
-        curr_dir = (curr_dir - 1) % 4
+# ================================================================
+# 실행부
 
 answer = 0
-for round in range(M):
-    # 1. 플레이어 공격.
+for _ in range(K):
+    # 1. 몬스터 죽이기.
     d, p = map(int, input().split())
     shot(d, p)
-
-    # 2. 빈 공간 채우기.
+    
+    # 2. 몬스터 땡겨오기.
     push()
-
-    # 3. 반복 몬스터 삭제.
-    while check():
+    
+    # 3. 4칸 이상 연속한 몬스터 죽이기.
+    while kill_check():
         push()
 
-    # 4. 격자 업데이트.
-    update()
+    # 4. 경로 업데이트 하기.
+    path = update()
 
+# 정답 출력
 print(answer)
