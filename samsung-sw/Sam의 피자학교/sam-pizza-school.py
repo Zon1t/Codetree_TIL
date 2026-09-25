@@ -1,137 +1,170 @@
-# 문제가 뭐 이래
-# 1. 가장 작은 위치 찾아서 밀가루 1 넣어주기.(여러개일 수 있음)
-# 2. 도우 말기..? 얘는 어떻게 구현하면 될까. 동적으로 배열 만들기?
-# 3. 도우 누르기. 적절하게 업데이트 필요
-# 4. 재배치
-# 5. 두 번 접기
-# 6. 도우 누르기
-# 7. 재배치
-# -> 말기 / 접기 로직만 잘 구현하면 문제 없이 풀릴 것 같다.. 하다하다 이런 식으로 달팽이를 만드네.
-# -> 1, 2, 2, 3, ... 이렇게 진행되는 것 같다. 이를 잘 활용하면 될듯? 일반화된 로직을 만들기 위해
-# 두 번 누를 때랑 비슷하게 작동한다고 생각했는데 흠.. 따로 잘 구현해보자.
+# 0912 시작  [] /
+# 1. 밀가루 양이 가장 작은 위치에 밀가루 넣기
+# 2. 도우 말기.. 회전 + append 반복
+# 3. 델타로 처리. 마는거는 항상 모양이 일정하게 나올 수 밖에 없다. 그럼 재사용도 가능할 듯
+# 4. 두 번 접고 누르기
+
 
 dr = [0, 1]
 dc = [1, 0]
 
-def in_range(row, col, h, w):
-    return 0 <= row < h and 0 <= col < w
 
-def add_one():
-    min_num = min(milgaru)
-    for idx in range(N):
-        if milgaru[idx] == min_num:
-            milgaru[idx] += 1
+def add_one(value):
+    for i in range(N):
+        if milgaru[i] == value:
+            milgaru[i] += 1
 
 
-def rotate(arr):
-    return [list(row[::-1]) for row in zip(*arr)]
+def make_snail():
+    curr_idx, remain = 4, N-4
+    curr_mat = [[1, 0],
+                [2, 3]]
+    while True:
+        need_mil = len(curr_mat)
+
+        if remain < need_mil:
+            break
+
+        curr_mat = [list(row[::-1]) for row in zip(*curr_mat)]
+        curr_mat.append(list(range(curr_idx, curr_idx+need_mil)))
+
+        curr_idx += need_mil
+        remain -= need_mil
+
+    if remain:
+        curr_mat[-1].extend(list(range(curr_idx, N)))
+        for row in range(len(curr_mat)-1):
+            curr_mat[row] += [-1] * remain
+
+    R, C, curr_idx = len(curr_mat), len(curr_mat[0]), 0
+    pos_mat = [[-1] * C for _ in range(R)]
+    for col in range(C):
+        for row in range(R-1, -1, -1):
+            if curr_mat[row][col] == -1:
+                break
+            pos_mat[row][col] = curr_idx
+            curr_idx += 1
+
+    return curr_mat, pos_mat, R, C
 
 
-def snail():
-    # 전개 과정. 배열 만들기 -> 더 만들 수 있으면 rotate 반복, 4의 배수인데 미리 만들까?
-    need_idx, remain = 2, N-4
-    curr_idx = 4
-    curr_arr = [[milgaru[1], milgaru[0]],
-                [milgaru[2], milgaru[3]]]
-    while snail_cnts[need_idx] <= remain:
-        curr_arr = rotate(curr_arr)
-        need_cnt = snail_cnts[need_idx]
-        curr_arr.append(milgaru[curr_idx:curr_idx+need_cnt])
+def press_snail():
+    new_garu = [0] * N
+    for row in range(R):
+        for col in range(C):
+            curr_idx = idx_snail[row][col]
+            if curr_idx == -1:
+                continue
+            curr_mil = milgaru[curr_idx]
 
-        remain -= need_cnt
-        curr_idx += need_cnt
-        need_idx += 1
-
-    w, h = len(curr_arr[0]), len(curr_arr)
-    new_arr1 = [[0] * w for _ in range(h)]
-    new_arr2 = [0] * (N-curr_idx+1)
-    for row in range(h):
-        for col in range(w):
-            curr_num = curr_arr[row][col]
             for d in range(2):
                 next_row, next_col = row + dr[d], col + dc[d]
-                if not in_range(next_row, next_col, h, w):
+                if next_row < 0 or next_row >= R or next_col < 0 or next_col >= C:
                     continue
-                temp = abs(curr_arr[next_row][next_col] - curr_num) // 5
-                if temp:
-                    new_arr1[next_row][next_col] -= temp * (1 if curr_arr[next_row][next_col] > curr_num else -1)
-                    new_arr1[row][col] += temp * (1 if curr_arr[next_row][next_col] > curr_num else -1)
 
-    for idx in range(curr_idx-1, N-1):
-        temp = abs(milgaru[idx]-milgaru[idx+1]) // 5
-        if temp:
-            new_arr2[idx-curr_idx+1] += temp * (1 if milgaru[idx] < milgaru[idx+1] else -1)
-            new_arr2[idx-curr_idx+2] -= temp * (1 if milgaru[idx] < milgaru[idx+1] else -1)
+                next_idx = idx_snail[next_row][next_col]
+                if next_idx == -1:
+                    continue
+                next_mil = milgaru[next_idx]
 
-    # 업데이트 해주기.
-    for r in range(h):
-        for c in range(w):
-            curr_arr[r][c] += new_arr1[r][c]
-    curr_arr[-1][-1] += new_arr2[0]
+                D = abs(curr_mil-next_mil) // 5
+                if D:
+                    curr_move, next_move = pos_snail[row][col], pos_snail[next_row][next_col]
+                    new_garu[curr_move] += -D if curr_mil > next_mil else D
+                    new_garu[next_move] -= -D if curr_mil > next_mil else D
 
-    for idx in range(1, len(new_arr2)):
-        milgaru[curr_idx+idx-1] += new_arr2[idx]
+    curr_idx = 0
+    for col in range(C):
+        for row in range(R-1, -1, -1):
+            if pos_snail[row][col] == -1:
+                break
+            new_garu[curr_idx] += milgaru[idx_snail[row][col]]
+            curr_idx += 1
 
-    write_idx = 0
-    for col in range(w):
-        for row in range(h-1, -1, -1):
-            milgaru[write_idx] = curr_arr[row][col]
-            write_idx += 1
+    return new_garu
+
+
+def make_twice():
+    idx_lst = list(range(N))
+    idx_mat = [idx_lst[half:half+quat][::-1],
+               idx_lst[quat:half],
+               idx_lst[:quat][::-1],
+               idx_lst[half+quat:]]
+
+    curr_idx = 0
+    pos_mat = [[-1] * quat for _ in range(4)]
+    for col in range(quat):
+        for row in range(3, -1, -1):
+            pos_mat[row][col] = curr_idx
+            curr_idx += 1
+
+    return idx_mat, pos_mat
 
 
 def twice():
-    temp = [milgaru[:half][::-1],
-            milgaru[half:]]
-
-    new_arr = []
-    rotated = rotate(rotate([list(row[:quat]) for row in temp]))
-
-    new_arr.append(rotated[0])
-    new_arr.append(rotated[1])
-    new_arr.append(temp[0][quat:])
-    new_arr.append(temp[1][quat:])
-
-    update = [[0] * quat for _ in range(4)]
+    new_garu = [0] * N
     for row in range(4):
         for col in range(quat):
+            curr_idx = idx_twice[row][col]
+            curr_mil = milgaru[curr_idx]
             for d in range(2):
-                next_row, next_col = row + dr[d], col + dc[d]
-                if not in_range(next_row, next_col, 4, quat):
+                next_row, next_col = row+dr[d], col+dc[d]
+                if next_row < 0 or next_row >= 4 or next_col < 0 or next_col >= quat:
                     continue
-                temp = abs(new_arr[row][col] - new_arr[next_row][next_col]) // 5
-                if temp:
-                    update[row][col] += temp * (1 if new_arr[row][col] < new_arr[next_row][next_col] else -1)
-                    update[next_row][next_col] -= temp * (1 if new_arr[row][col] < new_arr[next_row][next_col] else -1)
 
-    for row in range(4):
-        for col in range(quat):
-            new_arr[row][col] += update[row][col]
+                next_idx = idx_twice[next_row][next_col]
+                next_mil = milgaru[next_idx]
 
-    write_idx = 0
+                D = abs(curr_mil-next_mil) // 5
+                if D:
+                    curr_move, next_move = pos_twice[row][col], pos_twice[next_row][next_col]
+                    new_garu[curr_move] -= D if curr_mil > next_mil else -D
+                    new_garu[next_move] += D if curr_mil > next_mil else -D
+
+    curr_idx = 0
     for col in range(quat):
         for row in range(3, -1, -1):
-            milgaru[write_idx] = new_arr[row][col]
-            write_idx += 1
+            new_garu[curr_idx] += milgaru[idx_twice[row][col]]
+            curr_idx += 1
 
+    return new_garu
+
+
+def print_snail(what, snail):
+    print('----', what, '----')
+    for row in snail:
+        print(*row)
+
+
+# ===================================================
+# 세팅하기
 
 N, K = map(int, input().split())
 milgaru = list(map(int, input().split()))
-half, quat = N>>1, N>>2
+half, quat = N >> 1, N >> 2
 
-snail_cnts = [i//2+1 for i in range(1, N)]  # 대충 넉넉하게 잡자. 1, 2, 2, 3 ...
-cnt = 0
-while max(milgaru) - min(milgaru) > K:
-    # 1. 작은 놈 밀 추가.
-    add_one()
+idx_snail, pos_snail, R, C = make_snail()
+idx_twice, pos_twice = make_twice()
+turn = 0
 
-    # 2. 말기 & 누르기 & 배치
-    snail()
+# ===================================================
+# 실행부
 
-    # 3. 두 번 접기 & 누르기 & 배치
-    twice()
+while True:
+    # 0. 초기 세팅
+    min_garu = min(milgaru)
+    if max(milgaru) - min_garu <= K:
+        break
+    turn += 1
 
-    # 횟수 카운트.
-    cnt += 1
+    # 1. 밀가루 넣기
+    add_one(min_garu)
+
+    # 2. 달팽이 누르기.
+    milgaru = press_snail()
+
+    # 3. 두 번 접고 누르기.
+    milgaru = twice()
 
 # 정답 출력
-print(cnt)
+print(turn)
