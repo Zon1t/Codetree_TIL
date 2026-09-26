@@ -1,6 +1,10 @@
+# 12:51 [] /
+# 연쇄 처리만 잘하면 크게 문제 될 구석이 없다.
+# 이동 이전에 체크 처리 -> 이동 처리 -> 데미지 적용 이렇게 구성하면 될 것으로 보인다.
+
 class Knight:
-    DELTA_R = [-1, 0, 1, 0]
-    DELTA_C = [0, 1, 0, -1]
+    DR = [-1, 0, 1, 0]
+    DC = [0, 1, 0, -1]
 
     def __init__(self, i, r, c, h, w, k):
         self.idx = i
@@ -8,122 +12,114 @@ class Knight:
         self.col = c
         self.height = h
         self.width = w
-        self.hp = k
         self.origin_hp = k
+        self.hp = k
 
-    # 위치 업데이트
-    def update_pos(self, row, col):
-        self.row = row
-        self.col = col
-
-    # 정답 연산을 위해 정의
     def get_diff(self):
-        return self.origin_hp - self.hp if self.hp > 0 else 0
+        return self.origin_hp-self.hp if self.hp else 0
 
-    # hp 받아오기.
-    def get_hp(self):
-        return self.hp
+    def get_data(self):
+        return self.row, self.col, self.height, self.width
 
-    # check 세팅을 얻기 위함.
     def get_setting(self, d):
-        start_row = self.row-1 if d == 0 else self.row+self.height if d == 2 else self.row
-        start_col = self.col-1 if d == 3 else self.col+self.width if d == 1 else self.col
-        return start_row, start_col
+        if d == 0: return self.row-1, self.col
+        if d == 1: return self.row, self.col+self.width
+        if d == 2: return self.row+self.height, self.col
+        if d == 3: return self.row, self.col-1
 
-    # 이동 가능한지 체크하기.
+    def update_grid(self, is_idx):
+        start_row, start_col, height, width = self.get_data()
+        fill_value = self.idx if is_idx else -1
+        for row in range(start_row, start_row+height):
+            for col in range(start_col, start_col+width):
+                knights_grid[row][col] = fill_value
+
+    def move(self, d, get_damage):
+        self.row += self.DR[d]
+        self.col += self.DC[d]
+
+        if get_damage:
+            start_row, start_col, height, width = self.get_data()
+            damage = 0
+            for row in range(start_row, start_row+height):
+                for col in range(start_col, start_col+width):
+                    if grid[row][col] == 1:
+                        damage += 1
+            self.hp = max(0, self.hp-damage)
+            if self.hp:
+                self.update_grid(True)
+        else:
+            self.update_grid(True)
+
     def check(self, d):
-        # 초기 세팅 가져오기.
-        curr_row, curr_col = self.get_setting(d)
+        start_row, start_col = self.get_setting(d)
+        dr, dc = (1, 0) if d % 2 else (0, 1)
 
-        # 순회하며 집합 채워나가기.
-        return_set, check_set, flag = {self.idx}, set(), d%2+1
-        for cnt in range(self.width if flag==1 else self.height):
-            next_row, next_col = curr_row + self.DELTA_R[flag] * cnt, curr_col + self.DELTA_C[flag] * cnt
+        return_set, check_set = set(), set()
+        for k in range(self.height if d % 2 else self.width):
+            next_row, next_col = start_row + dr*k, start_col + dc*k
             if grid[next_row][next_col] == 2:
-                return False, None
-            if knight_grid[next_row][next_col]:
-                check_set.add(knight_grid[next_row][next_col])
+                return None
+            if knights_grid[next_row][next_col] != -1:
+                check_set.add(knights_grid[next_row][next_col])
 
-        # 이동 가능한 애들 담기.
-        for next_idx in check_set:
-            keep_going, move_set = knights[next_idx].check(d)
-            if not keep_going:
-                return False, None
-            return_set |= move_set
+        for check_idx in check_set:
+            temp = knights[check_idx].check(d)
+            if temp is None:
+                return None
+            return_set |= temp
 
-        return True, return_set
-
-    # 지우기.
-    def erase(self):
-        for delta_row in range(self.height):
-            for delta_col in range(self.width):
-                knight_grid[self.row + delta_row][self.col + delta_col] = 0
-
-    # 움직이기.
-    def move(self, d):
-        curr_row, curr_col = self.row + self.DELTA_R[d], self.col + self.DELTA_C[d]
-        self.update_pos(curr_row, curr_col)
-
-        # 격자 업데이트 + 데미지 적용
-        for delta_row in range(self.height):
-            for delta_col in range(self.width):
-                next_row, next_col = curr_row + delta_row, curr_col + delta_col
-                knight_grid[next_row][next_col] = self.idx
-
-                # 데미지 처리
-                if self.idx != attack_idx and grid[next_row][next_col] == 1:
-                    self.hp -= 1
-
-        # 죽으면 처리
-        if self.hp <= 0:
-            self.erase()
+        return_set.add(self.idx)
+        return return_set
 
 
-# 정답 연산하기.
 def get_answer():
-    answer = 0
-    for idx in range(1, M+1):
-        answer += knights[idx].get_diff()
-    return answer
+    temp = 0
+    for idx in range(M):
+        temp += knights[idx].get_diff()
+    return temp
 
-# custom 함수 정의
-def custom_print():
-    print(f'----knight_grid----')
-    for row in knight_grid:
+
+def print_grid():
+    print('----grid----')
+    for row in knights_grid:
         print(*row)
 
-# 입력 받기
-N, M, Q = map(int, input().split())
-grid = [[2]*(N+2)] + \
-    [[2] + list(map(int, input().split())) + [2] for _ in range(N)] + \
-    [[2]*(N+2)]
 
+# ===============================================================
 # 세팅
-knight_grid = [[0] * (N+2) for _ in range(N+2)]
-knights = [None]
-for idx in range(1, M+1):
+
+N, M, Q = map(int, input().split())
+grid = [[2] * (N+2)] + \
+       [[2] + list(map(int, input().split())) + [2] for _ in range(N)] + \
+       [[2] * (N+2)]
+
+knights = []
+knights_grid = [[-1]*(N+2) for _ in range(N+2)]
+for idx in range(M):
     r, c, h, w, k = map(int, input().split())
-    for row in range(r, r+h):
-        for col in range(c, c+w):
-            knight_grid[row][col] = idx
     knights.append(Knight(idx, r, c, h, w, k))
+    knights[idx].update_grid(True)
 
+# =================================================================
 # 실행부
-for _ in range(Q):
-    attack_idx, direction = map(int, input().split())
 
-    # 이미 죽은 기사면 continue
-    if knights[attack_idx].get_hp() <= 0:
+for _ in range(Q):
+    # 명령 수행하기.
+    i, d = map(int, input().split())
+    if not knights[i-1].hp:
         continue
 
-    # 움직일 수 있다면 이동시키기.
-    can_move, move_set = knights[attack_idx].check(direction)
-    if can_move:
-        for knight_idx in move_set:
-            knights[knight_idx].erase()
-        for knight_idx in move_set:             
-            knights[knight_idx].move(direction)
+    move_set = knights[i-1].check(d)
+    if move_set is None:
+        continue
 
-# 정답 출력
+    # 움직일 수 있으면 움직이기.
+    for move_idx in move_set:
+        knights[move_idx].update_grid(False)
+    for move_idx in move_set:
+        knights[move_idx].move(d, (move_idx != i-1))
+
+# 정답 출력하기.
 answer = get_answer()
 print(answer)
