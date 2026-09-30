@@ -1,209 +1,181 @@
-''' AI 로봇청소기 / 20260930 / 체감 난이도 : 골드 4
-소요 시간 : 47분 / 시도 : 1회 / 실행 시간 : 144ms / 메모리 : 20MB
-
-타임 라인 : 구상(15분) - 구현(25분) - 검증(7분)
-
-
-[구상]
-    - 처음에 클래스를 세팅하다가, 그냥 함수로 하는 게 익숙해서 그런가 땡기지는 않았다. 곧바로 수정해
-    서 구상을 이어나갔다.
-    - 주석 부분 수정을 꽤나 많이 했던 것 같다. 격자마다 최대 20만큼 청소 가능하다는 조건을 빼먹을까
-    혹시 몰라 적어주었고, 그냥 내가 착각할 만한 부분들, 문제 조건들 위주로 작성해주었다.
-
-[구현]
-    - 묘수가 이것저것 떠오르긴 했는데, 금방금방 떨쳐내고 건실한 풀이를 이어나갈 수 있었다. 이건 확실
-    히 잘한 부분 같다.
-    - 변수명을 나름 고민하고 넘어갔었는데 d <-> clean_d를 잘못 적는다거나, 초기 세팅에서 cleaner
-    grid를 -1로 초기화를 했었는데, 해당 부분을 잊고 그냥 0으로 지워주는 등 실수가 있었다. 다행히 구
-    현 과정에서 곧바로 찾아 수정할 수 있었다.
-    - move를 안하는 경우를 생각 못 했었다! 격자마다 최대 20만큼만 청소 가능하다 보니, 현 위치에 먼
-    지가 남아있는 경우도 분명 존재한다. 확산도 있고.. 2번 테케 디버깅 과정에서 꽤나 오랜 시간을 투자
-    해 발견할 수 있었다. 예전에도 시작 지점 == 도착 지점인 문제에서 해당 부분을 놓친 적이 있었는데,
-    반성해야 한다.
-
-[검증]
-    - 문제 <-> 주석 <-> 코드 과정을 계속 거쳤다. 테케 디버깅을 마친 이후기도 하고, 각 로직 별로 구
-    현 때 재차 확인했어서 크게 문제될 구석은 없다고 판단했다.
-
-* 시작하고 바로 끝나는 경우 잊지 말고 체크하기.
-'''
-
-# 전형적인 시키는거 잘하면 풀 수 있는 문제 같다. 델타 세팅해서 접근하면 될듯?
-# 1. move : 가장 가까운 오염된 격자로 이동하기.
-#       - 물건이 있으면 이동X
-#       - 행작, 열작 + 오염된 정도는 상관 없음에 유의하자.
-# 2. clean : ㅗ 모양으로 청소 가능. 바라보는 방향은 선택이 가능하다.
-#       - 가장 먼지량 많은 게 우선
-#       - 그 방향이 여러개인 경우 오-아-왼-위 우선순위를 가짐.
-#       - 청소는 청소기마다 순서대로 진행.
-#       - 격자마다 최대 20.
-# 3. accumulate : 먼지 축적. 먼지가 있는 모든 격자에 5씩 추가.
-# 4. spread : 먼지 확산. 인접 네 방향 먼지량 합을 10으로 나눈만큼 확산됨.
-#       - 깨끗한 격자에서만 "동시" 확산
-# 먼지량 합을 매턴 출력하자.
-
-
 from collections import deque
 
-dr = [0, 1, 0, -1]
-dc = [1, 0, -1, 0]
+def in_range(i, j):
+    return 0 <= i < n and 0 <= j < n
 
+def custom_print(title):
+    if debug:
+        print(f'========{title}========')
+        print(test, '번째')
+        print('현재 먼지')
+        for i in range(n):
+            for j in range(n):
+                val = room[i][j]
+                print(f'{val:2d}', end = ' ')
+            print()
+        print('현재 청소기')
+        for i in range(n):
+            for j in range(n):
+                val = vacuum[i][j]
+                print(f'{val:2d}', end = ' ')
+            print()
+        print(vloc)
 
-def in_range(row, col):
-    return 0 <= row < N and 0 <= col < N
+def vacuum_move():
+    for num in range(1, k + 1):
+        si, sj = vloc[num]
 
+        # 청소기 기존 위치에 이미 먼지가 있는 경우
+        if room[si][sj] > 0:
+            continue # 아 리턴 아니야!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
 
-def move(idx):
-    start_row, start_col = cleaner[idx]
-    cleaner_grid[start_row][start_col] = -1
+        visited = [[0] * n for _ in range(n)]
+        visited[si][sj] = 1
+        q = deque([[si, sj]])
+        closest = (INF, INF) # 행 최소, 열 최소
+        found = False
 
-    if grid[start_row][start_col] > 0:
-        return start_row, start_col
+        while q:
+            for _ in range(len(q)):
+                ci, cj = q.popleft()
 
-    visited = [[False] * N for _ in range(N)]
-    visited[start_row][start_col] = True
+                for d in range(4):
+                    ni = ci + di[d]
+                    nj = cj + dj[d]
 
-    find = []
-    Q = deque([(start_row, start_col)])
-    while Q:
-        if find:
-            find.sort()
-            return find[0][0], find[0][1]
+                    # 범위내, 미방문, 물건 칸 아님, 청소기 칸 아님
+                    if in_range(ni, nj) and visited[ni][nj] == 0 and room[ni][nj] != -1 and vacuum[ni][nj] != -1:
+                        visited[ni][nj] = 1
+                        q.append([ni, nj])
 
-        for _ in range(len(Q)):
-            curr_row, curr_col = Q.popleft()
-            for d in range(4):
-                next_row, next_col = curr_row + dr[d], curr_col + dc[d]
-                if not in_range(next_row, next_col) or grid[next_row][next_col] == -1:
-                    continue
-                if visited[next_row][next_col] or cleaner_grid[next_row][next_col] != -1:
-                    continue
+                        # 먼지 있는 칸
+                        if room[ni][nj] > 0:
+                            found = True
+                            closest = min(closest, (ni, nj))
 
-                visited[next_row][next_col] = True
-                Q.append((next_row, next_col))
+            if found:
+                nni, nnj = closest
+                # 청소기 좌표 업데이트
+                vloc[num] = [nni, nnj]
+                vacuum[si][sj] = 0
+                vacuum[nni][nnj] = -1
+                break # break 걸어!!!
 
-                if grid[next_row][next_col] > 0:
-                    find.append((next_row, next_col))
+def vacuum_clean():
+    for num in range(1, k + 1):
+        ci, cj = vloc[num]
+        max_dust = 0
+        max_d = -1
 
-    # 아마 어디에도 못가면..? 이게 있나.
-    return start_row, start_col
+        for d in range(4):
+            dust = 0
+            for di, dj in rel[d]:
+                ni = ci + di
+                nj = cj + dj
 
+                # 범위내, 먼지 있는 칸
+                if in_range(ni, nj) and room[ni][nj] > 0:
+                    dust += min(room[ni][nj], 20) # 최대 20만큼만
 
-def find_dir(idx):
-    curr_row, curr_col = cleaner[idx]
-    curr_max, max_dir = -1, -1
+            if dust > max_dust:
+                max_dust = dust
+                max_d = d
 
-    clean_lst = [min(20, grid[curr_row+dr[d]][curr_col+dc[d]]) if in_range(curr_row+dr[d], curr_col+dc[d]) and grid[curr_row+dr[d]][curr_col+dc[d]] > 0 else 0 for d in range(4)]
-    for d in range(4):
-        can_clean = 0
-        for clean_d in range(4):
-            # 등 뒤는 청소할 수 없음
-            if clean_d == (d + 2) % 4:
-                continue
-            can_clean += clean_lst[clean_d]
-            
-        if curr_max < can_clean:
-            curr_max = can_clean
-            max_dir = d
-
-    return max_dir
-
-
-def clean(idx):
-    curr_row, curr_col = cleaner[idx]
-    grid[curr_row][curr_col] -= min(20, grid[curr_row][curr_col])
-
-    clean_dir = find_dir(idx)
-    for d in range(4):
-        if d == (clean_dir + 2) % 4:
+        # 어디로 가도 청소 하나도 못하는 경우
+        if max_dust == 0:
             continue
 
-        next_row, next_col = curr_row + dr[d], curr_col + dc[d]
-        if not in_range(next_row, next_col) or grid[next_row][next_col] < 1:
-            continue
+        # 최대로 청소할 수 있는 방향으로 먼지 청소
+        for di, dj in rel[max_d]:
+            ni = ci + di
+            nj = cj + dj
 
-        grid[next_row][next_col] -= min(20, grid[next_row][next_col])
+            # 범위내, 먼지 있는 칸
+            if in_range(ni, nj) and room[ni][nj] > 0:
+                room[ni][nj] -= min(room[ni][nj], 20) # 최대 20만큼만
 
+def add_dust():
+    for i in range(n):
+        for j in range(n):
+            if room[i][j] > 0:
+                room[i][j] += 5
 
-def accumulate():
-    for row in range(N):
-        for col in range(N):
-            if grid[row][col] > 0:
-                grid[row][col] += 5
-
-
-def spread():
-    update_grid = [[0] * N for _ in range(N)]
-    for row in range(N):
-        for col in range(N):
-            if grid[row][col] != 0:
+def spread_dust():
+    spread = [[0] * n for _ in range(n)]
+    for i in range(n):
+        for j in range(n):
+            if room[i][j] != 0: # 청소기 있는 곳은 확산 되는 것 같은데...
                 continue
 
-            total = 0
+            dust = 0
             for d in range(4):
-                next_row, next_col = row + dr[d], col + dc[d]
-                if not in_range(next_row, next_col) or grid[next_row][next_col] < 1:
-                    continue
-                total += grid[next_row][next_col]
+                ni = i + di[d]
+                nj = j + dj[d]
 
-            update_grid[row][col] += total // 10
+                if in_range(ni, nj) and room[ni][nj] > 0:
+                    dust += room[ni][nj]
 
-    for row in range(N):
-        for col in range(N):
-            grid[row][col] += update_grid[row][col]
+            spread[i][j] += dust // 10
 
+    for i in range(n):
+        for j in range(n):
+            room[i][j] += spread[i][j]
 
-def get_answer():
-    total = 0
-    for row in range(N):
-        for col in range(N):
-            if grid[row][col] < 1:
+def calc_dust():
+    total_dust = 0
+
+    for i in range(n):
+        for j in range(n):
+            if room[i][j] <= 0:
                 continue
-            total += grid[row][col]
-    return total
+            total_dust += room[i][j]
 
+    return total_dust
 
-def print_grid():
-    for idx in range(K):
-        print(f'----idx: {idx+1}----')
-        print(*cleaner[idx])
-    print(f'----grid----')
-    for row in grid:
-        print(*row)
-
-
-# =============================================================
+# ========================================================
 # 세팅
+n, k, l = map(int, input().split())
+# -1: 물건, 0 이상: 먼지 양
+room = [list(map(int, input().split())) for _ in range(n)]
+# -1: 청소기 있음, 0: 없음
+vacuum = [[0] * n for _ in range(n)]
+vloc = [[]] # 각 청소기 좌표
 
-N, K, L = map(int, input().split())
-grid = [list(map(int, input().split())) for _ in range(N)]
+for num in range(1, k + 1):
+    r, c = map(lambda x: int(x) - 1, input().split())
+    vacuum[r][c] = -1
+    vloc.append([r, c])
 
-cleaner = []
-cleaner_grid = [[-1] * N for _ in range(N)]
-for i in range(K):
-    r, c = map(lambda x: int(x)-1, input().split())
-    cleaner.append((r, c))
-    cleaner_grid[r][c] = i
+di = [0, 1, 0, -1]
+dj = [1, 0, -1, 0]
+rel = [[[0, 0], [-1, 0], [1, 0], [0, 1]],
+       [[0, 0], [0, 1], [0, -1], [1, 0]],
+       [[0, 0], [-1, 0], [1, 0], [0, -1]],
+       [[0, 0], [0, 1], [0, -1], [-1, 0]]]
 
-# ==============================================================
+INF = float('inf')
+debug = False
+
+# ========================================================
 # 실행부
 
-for _ in range(L):
-    # 1. 청소기 움직이기.
-    for idx in range(K):
-        nr, nc = move(idx)
-        cleaner[idx] = (nr, nc)
-        cleaner_grid[nr][nc] = idx
+for test in range(1, l + 1):
+    # [1] 청소기 이동
+    vacuum_move()
+    custom_print('청소기 이동했습니다.')
 
-    # 2. 청소하기.
-    for idx in range(K):
-        clean(idx)
+    # [2] 먼지 청소
+    vacuum_clean()
+    custom_print('먼지 청소했습니다.')
 
-    # 3. 먼지 축적
-    accumulate()
+    # [3] 먼지 추가
+    add_dust()
+    custom_print('먼지 추가했습니다.')
 
-    # 4. 먼지 확산.
-    spread()
+    # [4] 먼지 확산
+    spread_dust()
+    custom_print('먼지 확산했습니다.')
 
-    # 5. 정답 출력
-    print(get_answer())
+    # [5] 먼지 양 계산
+    total_dust = calc_dust()
+    print(total_dust)
