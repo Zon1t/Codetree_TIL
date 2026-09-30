@@ -1,3 +1,33 @@
+''' AI 로봇청소기 / 20260930 / 체감 난이도 : 골드 4
+소요 시간 : 47분 / 시도 : 1회 / 실행 시간 : 144ms / 메모리 : 20MB
+
+타임 라인 : 구상(15분) - 구현(25분) - 검증(7분)
+
+
+[구상]
+    - 처음에 클래스를 세팅하다가, 그냥 함수로 하는 게 익숙해서 그런가 땡기지는 않았다. 곧바로 수정해
+    서 구상을 이어나갔다.
+    - 주석 부분 수정을 꽤나 많이 했던 것 같다. 격자마다 최대 20만큼 청소 가능하다는 조건을 빼먹을까
+    혹시 몰라 적어주었고, 그냥 내가 착각할 만한 부분들, 문제 조건들 위주로 작성해주었다.
+
+[구현]
+    - 묘수가 이것저것 떠오르긴 했는데, 금방금방 떨쳐내고 건실한 풀이를 이어나갈 수 있었다. 이건 확실
+    히 잘한 부분 같다.
+    - 변수명을 나름 고민하고 넘어갔었는데 d <-> clean_d를 잘못 적는다거나, 초기 세팅에서 cleaner
+    grid를 -1로 초기화를 했었는데, 해당 부분을 잊고 그냥 0으로 지워주는 등 실수가 있었다. 다행히 구
+    현 과정에서 곧바로 찾아 수정할 수 있었다.
+    - move를 안하는 경우를 생각 못 했었다! 격자마다 최대 20만큼만 청소 가능하다 보니, 현 위치에 먼
+    지가 남아있는 경우도 분명 존재한다. 확산도 있고.. 2번 테케 디버깅 과정에서 꽤나 오랜 시간을 투자
+    해 발견할 수 있었다. 예전에도 시작 지점 == 도착 지점인 문제에서 해당 부분을 놓친 적이 있었는데,
+    반성해야 한다.
+
+[검증]
+    - 문제 <-> 주석 <-> 코드 과정을 계속 거쳤다. 테케 디버깅을 마친 이후기도 하고, 각 로직 별로 구
+    현 때 재차 확인했어서 크게 문제될 구석은 없다고 판단했다.
+
+* 시작하고 바로 끝나는 경우 잊지 말고 체크하기.
+'''
+
 # 전형적인 시키는거 잘하면 풀 수 있는 문제 같다. 델타 세팅해서 접근하면 될듯?
 # 1. move : 가장 가까운 오염된 격자로 이동하기.
 #       - 물건이 있으면 이동X
@@ -62,18 +92,16 @@ def move(idx):
 def find_dir(idx):
     curr_row, curr_col = cleaner[idx]
     curr_max, max_dir = -1, -1
+
+    clean_lst = [min(20, grid[curr_row+dr[d]][curr_col+dc[d]]) if in_range(curr_row+dr[d], curr_col+dc[d]) and grid[curr_row+dr[d]][curr_col+dc[d]] > 0 else 0 for d in range(4)]
     for d in range(4):
         can_clean = 0
         for clean_d in range(4):
             # 등 뒤는 청소할 수 없음
             if clean_d == (d + 2) % 4:
                 continue
-
-            next_row, next_col = curr_row + dr[clean_d], curr_col + dc[clean_d]
-            if not in_range(next_row, next_col) or grid[next_row][next_col] < 1:
-                continue
-
-            can_clean += min(20, grid[next_row][next_col])
+            can_clean += clean_lst[clean_d]
+            
         if curr_max < can_clean:
             curr_max = can_clean
             max_dir = d
