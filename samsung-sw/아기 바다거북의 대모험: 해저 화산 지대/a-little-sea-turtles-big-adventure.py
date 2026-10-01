@@ -1,193 +1,196 @@
-# 전형적인 시키는거 잘하면 되는 시뮬레이션 문제.
-# 1. 바다 거북의 이동. id가 작은 순서대로 바다 거북이 이동한다.
-#       - 산호초, 화석, 다른 바다 거북이 있는 칸은 이동 불가.
-#       - 이동 우선순위 : 우 - 하 - 좌 - 상
-#       - 안식처(N-1, N-1) 도착시 도착시간 기록 및 제외.
-#       - 이동 결과는 항상 반영한 채로 탐색함.
-
-# 2. 화산 압력 증가. 모든 해저 화산의 마그마 압력 10씩 증가.
-#       - 좌표를 따로 받아서 관리하면 될듯? dict 쓰자.
-
-# 3. 분출 및 연쇄반응.
-#       - 분출 임계치 이상이 되더라도 임계치 만큼의 열기가 발생함. **
-#       - 열기는 한 칸 이동할 때마다 절반으로 줄어든다.
-#       - 산호초 만나면 중단.
-#       - 여러 화산의 열기가 도달하면 합산 -> 이건 grid 새로 만들어서 관리? 혹은 딕셔너리
-#       - 연쇄 반응은 현재 마그마 압력 + 해당 칸에 누적된 외부 열기 >= 임계치를 만족해야 함.
-#       - 열기 20 이상인 칸에 거북이가 있으면 화석이 됨.. 잔인
-
-# 4. 환경 초기화.
-#       - 열기 정보 지우기.
-#       - 압력은 그대로 유지. -> 연쇄 반응 연산할 때 조건이 그래서 주어진 듯
-#       - 환경 초기화는 따로 안 하도록 세팅
-
-# 다 짜고 보니 뭔가 비효율적인 구석이 많다? 걍 건실하게 했으니 더 읽다가 11시 제출하기.
-
 from collections import deque
 
-dr = [0, 1, 0, -1]
-dc = [1, 0, -1, 0]
+def in_range(i, j):
+    return 0 <= i < n and 0 <= j < n
 
+def custom_print(title):
+    if debug:
+        print(f'========{title}========')
+        print('현재 턴수는', turns)
+        print('바다 정보')
+        for row in sea:
+            print(*row)
+        print('거북이 정보')
+        print(turtle_loc)
+        print('화산 정보')
+        print(vinfo)
+        print('답')
+        print(arrival)
+        print()
 
-def in_range(row, col):
-    return 0 <= row < N and 0 <= col < N
+def bfs(si, sj, ei, ej):
+    visited = [[-1] * n for _ in range(n)]
+    visited[ei][ej] = 0
+    q = deque([[ei, ej]])
 
+    while q:
+        found = False
 
-def move(idx):
-    start_row, start_col = turtles[idx]
-    if escape_time[idx] != -1 or turtle_grid[start_row][start_col] == -2:
-        return
+        for _ in range(len(q)):
+            ci, cj = q.popleft()
 
-    dist_grid = [[-1]*N for _ in range(N)]
-    dist_grid[-1][-1] = 0
+            if ci == si and cj == sj:
+                found = True
+                break
 
-    Q = deque([(N-1, N-1)])
-    while Q:
-        curr_row, curr_col = Q.popleft()
+            for d in range(4):
+                ni = ci + di[d]
+                nj = cj + dj[d]
 
-        if curr_row == start_row and curr_col == start_col:
+                # 범위내, 미방문, 지나갈 수 있는 칸
+                if in_range(ni, nj) and visited[ni][nj] == -1 and sea[ni][nj] == 0:
+                    visited[ni][nj] = visited[ci][cj]+1
+                    q.append([ni, nj])
+        if found:
             break
 
-        for d in range(4):
-            next_row, next_col = curr_row + dr[d], curr_col + dc[d]
-
-            if not in_range(next_row, next_col) or grid[next_row][next_col]:
-                continue
-            if turtle_grid[next_row][next_col] not in [-1, idx] or dist_grid[next_row][next_col] != -1:
-                continue
-
-            dist_grid[next_row][next_col] = dist_grid[curr_row][curr_col]+1
-            Q.append((next_row, next_col))
-
+    # 경로가 존재하는 경우
     for d in range(4):
-        next_row, next_col = start_row + dr[d], start_col + dc[d]
+        ni = si + di[d]
+        nj = sj + dj[d]
 
-        if not in_range(next_row, next_col):
-            continue
+        if in_range(ni, nj) and visited[ni][nj] == visited[si][sj]-1:
+            return ni, nj # 다음 칸 좌표 리턴
 
-        if dist_grid[start_row][start_col]-1 == dist_grid[next_row][next_col]:
-            turtles[idx] = (next_row, next_col)
-            turtle_grid[start_row][start_col] = -1
+    # 경로가 존재하지 않는 경우
+    return si, sj # 기존 좌표 리턴
 
-            if next_row == N-1 and next_col == N-1:
-                escape_time[idx] = turn
-            else:
-                turtle_grid[next_row][next_col] = idx
+def explosion():
+    heat = [[0] * n for _ in range(n)]
+    exploded = set()
 
-            return
-
-
-def update_pressure():
-    for mount_row, mount_col in mount_info.keys():
-        curr_pressure, threshold = mount_info[(mount_row, mount_col)]
-        if curr_pressure+10 >= threshold:
-            active_lst.append((mount_row, mount_col))
-        else:
-            mount_info[(mount_row, mount_col)][0] += 10
-
-
-def action():
-    global active_lst
-    if not active_lst:
-        return
-
-    hot_degree = [[0] * N for _ in range(N)]
-    active_set = set()
-
-    while active_lst:
-        new_active = []
-
-        for mount_row, mount_col in active_lst:
-            if (mount_row, mount_col) in active_set:
-                continue
-            active_set.add((mount_row, mount_col))
-
-            mount_info[(mount_row, mount_col)][0] = 0
-            P = mount_info[(mount_row, mount_col)][1]
-            hot_degree[mount_row][mount_col] += P
-
-            Q = deque()
-            for d in range(4):
-                next_row, next_col = mount_row + dr[d], mount_col + dc[d]
-                if not in_range(next_row, next_col) or grid[next_row][next_col]:
-                    continue
-                hot_degree[next_row][next_col] += P//2
-                Q.append((next_row, next_col, d, P//2))
-            while Q:
-                curr_row, curr_col, curr_dir, curr_press = Q.popleft()
-                if curr_press == 0:
-                    continue
-
-                next_row, next_col = curr_row + dr[curr_dir], curr_col + dc[curr_dir]
-                if not in_range(next_row, next_col) or grid[next_row][next_col]:
-                    continue
-                hot_degree[next_row][next_col] += curr_press//2
-                Q.append((next_row, next_col, curr_dir, curr_press//2))
-
-        for mount_row, mount_col in mount_info.keys():
-            if (mount_row, mount_col) in active_set:
+    while True:
+        added = False # 새로 폭발한 화산이 있었는지
+        for num in range(1, k + 1):
+            if num in exploded: # 이미 분출했으면 스킵
                 continue
 
-            curr_pressure, threshold = mount_info[(mount_row, mount_col)]
-            if curr_pressure + hot_degree[mount_row][mount_col] >= threshold:
-                new_active.append((mount_row, mount_col))
+            vi, vj = vinfo[num - 1][2], vinfo[num - 1][3]
+            acc_heat = vinfo[num - 1][0] + heat[vi][vj] # 현재 마그마 압력 + 누적된 열기
 
-        active_lst = new_active
+            if acc_heat >= vinfo[num - 1][1]: # 임계치 이상이면 분출
+                added = True
+                exploded.add(num)
+                heat[vi][vj] += vinfo[num - 1][1]
 
-    for turtle_row, turtle_col in turtles:
-        if hot_degree[turtle_row][turtle_col] >= 20:
-            turtle_grid[turtle_row][turtle_col] = -2
+                # dfs
+                for d in range(4):
+                    ci, cj = vi, vj
+                    cur_heat = vinfo[num - 1][1] # 분출할 열기
 
+                    while True:
+                        cur_heat //= 2
+                        ni = ci + di[d]
+                        nj = cj + dj[d]
 
-def print_state():
-    print(f'-----{turn}-----')
-    print(f'----turtle_pos----')
-    for idx in range(M):
-        print(*turtles[idx])
-    print()
-    print(f'----volc_info----')
-    for k in mount_info.keys():
-        press, thre = mount_info[k]
-        print(f'curr_press: {press}, threshold: {thre}')
-    print()
-    print_grid('turtle', turtle_grid)
+                        # 범위 밖 or 산호초 만남 or 열기 0 되면 break
+                        if not in_range(ni, nj) or sea[ni][nj] == -11 or cur_heat == 0:
+                            break
 
+                        heat[ni][nj] += cur_heat
+                        ci, cj = ni, nj
 
-def print_grid(what, grid):
-    print(f'----{what}_grid----')
-    for row in grid:
-        print(*row)
-    print()
+        # 새로 폭발한 화산이 없었다면 멈춤
+        if not added:
+            break
 
+    for i in range(n):
+        for j in range(n):
+            # 열기 20 이상인 칸에 거북이가 있는 경우
+            if heat[i][j] >= 20 and sea[i][j] > 0:
+                turtle_num = sea[i][j]
+                sea[i][j] = -turtle_num # 화석으로 변함
+                arrival[turtle_num - 1] = -1
 
-# ============================================================
+    return exploded
+
+# ================================================================
 # 세팅
 
-N, M, K = map(int, input().split())
-grid = [list(map(int, input().split())) for _ in range(N)]
+n, m, k = map(int, input().split())
+# 0: 빈 공간
+# -11: 산호초
+# 1 ~ 10: 살아있는 거북이
+# -1 ~ -10: 화석 거북이
+sea = [list(map(int, input().split())) for _ in range(n)]
+turtle_loc = [] # 거북이 좌표
+vinfo = [] # [마그마 압력, 임계치, i, j]
 
-turtles = [tuple(map(int, input().split())) for _ in range(M)]
-turtle_grid = [[-1] * N for _ in range(N)]
-for i, (row, col) in enumerate(turtles):
-    turtle_grid[row][col] = i
-escape_time = [-1] * M
+for i in range(n):
+    for j in range(n):
+        if sea[i][j] == 1:
+            sea[i][j] = -11
 
-mount_info = {(row, col): [0, threshold] for row, col, threshold in [tuple(map(int, input().split())) for _ in range(K)]}
-active_lst = []
+for num in range(1, m + 1):
+    r, c = map(int, input().split())
+    sea[r][c] = num
+    turtle_loc.append([r, c])
 
-# =============================================================
+for num in range(1, k + 1):
+    r, c, p = map(int, input().split())
+    vinfo.append([0, p, r, c])
+
+# 우하좌상
+di = [0, 1, 0, -1]
+dj = [1, 0, -1, 0]
+
+home_i, home_j = n - 1, n - 1
+arrival = [0] * m
+turns = 1
+
+debug = False
+
+# ================================================================
 # 실행부
 
-for turn in range(1, 101):
-    # 1. 바다거북 이동하기
-    for turtle_idx in range(M):
-        move(turtle_idx)
+while True:
+    # [1] 바다거북이 이동
+    for num in range(1, m + 1):
+        if arrival[num - 1] != 0: # 이미 도착/화석이 된 거북이면 스킵
+            continue
+        ti, tj = turtle_loc[num - 1]
+        sea[ti][tj] = 0 # 기존 위치 0
 
-    # 2. 화산 압력 증가
-    update_pressure()
+        # 거북이 정보 업데이트
+        ni, nj = bfs(ti, tj, home_i, home_j) # bfs 호출
+        turtle_loc[num - 1] = [ni, nj] # 거북이 좌표 업데이트
+        if ni == home_i and nj == home_j: # 안식처 도착
+            arrival[num - 1] = turns
+        else: # 도착 안 함
+            sea[ni][nj] = num
 
-    # 3. 화산 분출 및 연쇄 반응
-    action()
+    custom_print('바다거북이가 이동했어요.')
 
-# 정답 출력
-print('\n'.join(map(str, escape_time)))
+    # [2] 화산 압력 증가
+    for num in range(k):
+        vinfo[num][0] += 10
+
+    # [3] 화산 분출
+    exploded = explosion() # 리턴: 분출한 화산
+
+    # [4] 분출한 화산 마그마 압력 초기화
+    for num in exploded:
+        vinfo[num - 1][0] = 0
+
+    custom_print('화산 분출했어요.')
+
+    # [5] 종료 확인
+    # 1) 모두 도착 or 화석이 된 경우
+    done = True
+    for time in arrival:
+        if time == 0:
+            done = False
+    if done:
+        break
+
+    # 2) 100턴 지난 경우
+    turns += 1
+    if turns == 101:
+        for t in range(m):
+            if arrival[t] == 0:
+                arrival[t] = -1
+        break
+
+# [6] 출력
+for t in range(m):
+    print(arrival[t])
