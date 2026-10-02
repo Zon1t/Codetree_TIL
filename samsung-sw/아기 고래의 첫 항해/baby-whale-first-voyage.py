@@ -75,29 +75,30 @@ def adj_move():
 def find_next():
     global whale_row, whale_col, whale_dir
 
-    dist_grid = [[-1] * (N+2) for _ in range(N+2)]
-    dist_grid[whale_row][whale_col] = 0
+    dir_grid = [[-1] * (N+2) for _ in range(N+2)]
+    dir_grid[whale_row][whale_col] = whale_dir
 
-    find = (N+2, N+2, 0)
-    Q = deque([(whale_row, whale_col, whale_dir)])
+    find = (N+2, N+2)
+    Q = deque([(whale_row, whale_col)])
     while Q:
         for _ in range(len(Q)):
-            curr_row, curr_col, curr_dir = Q.popleft()
+            curr_row, curr_col = Q.popleft()
 
             for d in range(4):
                 next_row, next_col = curr_row + dr[d], curr_col + dc[d]
 
-                if grid[next_row][next_col] or dist_grid[next_row][next_col] != -1:
+                if grid[next_row][next_col] or dir_grid[next_row][next_col] != -1:
                     continue
 
-                dist_grid[next_row][next_col] = dist_grid[curr_row][curr_col]+1
-                Q.append((next_row, next_col, d))
+                dir_grid[next_row][next_col] = d
+                Q.append((next_row, next_col))
 
                 if not visited[next_row][next_col]:
-                    find = min(find, (next_row, next_col, d))
+                    find = min(find, (next_row, next_col))
 
         if find[0] != N+2:
-            whale_row, whale_col, whale_dir = find
+            whale_row, whale_col = find
+            whale_dir = dir_grid[whale_row][whale_col]
             visited[whale_row][whale_col] = True
             answer.append((whale_row, whale_col))
             return True
