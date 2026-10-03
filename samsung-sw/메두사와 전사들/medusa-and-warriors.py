@@ -1,278 +1,220 @@
-''' 메두사와 전사들 / 20260922 / 체감 난이도 : 골드 1
-소요 시간 : 111분 / 시도 : 2회 (1회차 : 런타임 에러) / 실행 시간 : 394ms / 메모리 : 25MB
+# [] /
+# 시작 09:33
+# 1. 메두사의 이동. dist_grid 만들어서 재탕하면 될 듯
+#       - 상 하 좌 우 우선순위 잘 따르기.
+#       - 전사가 있으면 사라짐 처리.
 
-타임 라인 : 구상(21분) - 구현(66분) - 검증(22분) - 수정(2분)
+# 2. 메두사의 시선. 시선 grid를 받아와야 한다. 전사 이동에 쓰임
+#       - 가려지는 애들은 appendleft 활용해서 bfs 하면 될 것 같다.
+#       - 퍼뜨리면서 석화된 전사의 수 역시 구해야 한다.
+#       - 역시 상 하 좌 우의 우선순위에 의거해서 바라보는 방향을 결정한다.
 
-
-[구상]
-    - 복잡하고 시키는거 많기는 하지만, 개별적으로 보았을 때에는 어렵지 않다고 생각했다. 그나마 시선
-    처리하는 부분에서의 고민 정도? 조금 있었던 것 같다.
-    - 최단 경로와 최단 거리에 대한 부분?이 조금 헷갈렸던 것 같다. 위 네 단계에서 맨해튼으로 생각해
-    라 라고 명시되어 있었는데, 예제 1번에서 맨해튼을 따라가면 메두사는 공원으로 이동하지 못한다. 그
-    래서 경로는 그냥 우리가 bfs에서 소위 생각하는 최단 경로임을 확정짓고 넘어갔다.
-
-[구현]
-    - 묘수에 한 번 빠졌다가 헤어나오지 못할 뻔 했다. 시선이 메두사를 기준으로 전파되면서 뻗어나가다
-    전사를 만나면 그 뒤로 전파가 안되게 끔 처리하기 위한 여러 세팅들을 시도해보았었다. 그러다가 꼬여
-    그냥 완탐 하듯이 만나면 뒤에 처리해주는 식으로.. 비효율적이지만 그렇게 진행했다. 그냥 하드코딩으
-    로 밀고 나가면 되는데 이걸 왜 하기 싫어하는지 모르겠다. 이거 갈아 엎는 것 때문에 꽤나 많은 시간
-    을 쓰게 되었다. 영상 보니까 30분 넘게 이짓거리 하고, 10분만에 해당 로직을 완성했다..
-    - 그 외에는 그냥 평범하게 잘 구현한 것 같다. 그나마 용사 움직이는 로직에 조금 신경을 많이 써가며
-    검증했던 것 같다.
-
-[검증]
-    - 우선 용사 움직이는 로직에서 아예 움직이지 못하는 경우를 적절하게 처리하지 못해, 해당 부분을 수
-    정했다. 애초에 움직이지 못한다는 선택지가 있는 줄도 몰랐는데 2번 테케를 따라가보니, 움직이지 못하
-    는 경우가 무조건 있는게 맞았다.
-    - 시선 처리를 확인해보는데 케이스가 조금 부족하다고 생각해서 문제에 있는 경우를 직접 만들어 넣어
-    보았다. 그러다가 status 판별을 똑바로 하지 못함을 발견하고 인덱싱을 잘못했다는 사실을 발견해 해당
-    부분을 수정해주었다.
-    - 구현 과정에서 꼼꼼하게 확인하기도 했고 검증도 디버깅 & 검증도 충분히 해보았다고 생각해서 문제
-    재차 읽어보고 제출하게 되었다.
-
-[수정]
-    - 런타임 에러가 날 구석이 있나 싶었다.. 어지간하면 오타라고 생각해서 변수명 위주로 확인하는데 바로
-    발견할 수 있었다. dist_grid를 만드는 과정에서 start_row와 start_col에 각각 er과 er을 할당한
-    것이다;; 원래 좌표 변수명은 항상 _row, _col로 끝내는 게 루틴인데 문제에서 사용할 변수도 워낙 많
-    고 구현해야 할 부분도 많다보니 변수명을 좀 조잡하게 세팅하긴 했었다. 도대체 테케랑 내가 만든 테케는
-    왜 정상 작동했는지 확인해보니, er과 ec가 애초에 같거나 해당 경로 위에 도착점이 있어 운 좋게 통과
-    한 것.. 어지간하면 익숙한, 정해둔 변수명을 사용하도록 하자.
-
-
-예제에서 나오는 시선 처리 케이스
-9 6
-5 4 0 0
-2 2 4 2 4 5 4 6 4 7 4 8
-0 0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0 0
-
-9 3
-0 5 0 0
-4 2 4 4 6 6
-0 0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0 0
-'''
-
-# 굉장히 귀찮은 문제이지만, 그냥 시키는대로 천천히 하면 된다. 어려운 로직은 없어 보인다.
-# m_move() -> see() -> w_move() -> attack() 이런 느낌으로..
-# 최단 거리는 맨해튼 거리로 연산하면 된다. << 이거 쉽지않네
-# 유의할 점? 시야각을 잘 처리해야 할 것 같은데.. bfs까진 맞고. 용사 만나는 위치 기준으로 덧씌우기?
-# 단순히 생각하면 안 될 것 같다. 일단 구현 ㄱㄱ
-
+# 3. 전사들의 이동 & 공격. 공격한 전사의 수, 전사들의 이동 거리를 반환해야 한다.
+#       - 두 칸 이동할 수 있고, 경우에 따라선 이동 불가능한 경우 역시 존재한다.
+#       - 상 하 좌 우 -> 좌 우 상 하 우선순위 잘 따르기.
+#       - 시야각 체크 잘하기.
 
 from collections import deque
 
-
 dr = [-1, 1, 0, 0]
 dc = [0, 0, -1, 1]
+delta_lst = [[(-1, -1), (-1, 0), (-1, 1)],
+             [(1, -1),   (1, 0),  (1, 1)],
+             [(-1, -1), (0, -1), (1, -1)],
+             [(-1, 1),   (0, 1),  (1, 1)]]
+select_lst = [(0, 1, 2), (0, 1), (1,), (1, 2)]
 
-# 이거 폐기, 그냥 완탐하면 되는데 무슨 부귀영화를 누리겠다고;
-# # 직선 따로 대각 따로? 대각은 이후 직선도 퍼지게끔? 이것도 좋아보인다.
-# deltas = [[[(-1, -1), (-1, 0), (None, None)], [(None, None), (-1, 0), (None, None)], [(None, None), (-1, 0), (-1, 1)]],
-#           [[(1, -1), (1, 0), (None, None)],   [(None, None), (1, 0), (None, None)],  [(None, None), (1, 0), (1, 1)]],
-#           [[(-1, -1), (0, -1), (None, None)], [(None, None), (0, -1), (None, None)], [(None, None), (0, -1), (1, -1)]],
-#           [[(-1, 1), (0, 1), (None, None)],   [(None, None), (0, 1), (None, None)],  [(None, None), (0, 1), (1, 1)]]]
 
-deltas = [[[(-1, -1), (-1, 0), (-1, 1)], [(-1, -1), (-1, 0)], [(-1, 0)], [(-1, 0), (-1, 1)]],
-          [[(1, -1), (1, 0), (1, 1)],    [(1, -1), (1, 0)],   [(1, 0)],  [(1, 0), (1, 1)]],
-          [[(-1, -1), (0, -1), (1, -1)], [(-1, -1), (0, -1)], [(0, -1)], [(0, -1), (1, -1)]],
-          [[(-1, 1), (0, 1), (1, 1)],    [(-1, 1), (0, 1)],   [(0, 1)],  [(0, 1), (1, 1)]]]
-
+def get_dist(x, y):
+    return abs(x[0]-y[0]) + abs(x[1]-y[1])
 
 
 def in_range(row, col):
     return 0 <= row < N and 0 <= col < N
 
 
-def get_dist(pos1, pos2):
-    return abs(pos1[0]-pos2[0]) + abs(pos1[1]-pos2[1])
+def get_dist_grid():
+    visit_grid = [[-1] * N for _ in range(N)]
+    visit_grid[end_row][end_col] = 0
 
-
-def make_dist_grid():
-    start_row, start_col = er, ec
-    dist_grid = [[-1] * N for _ in range(N)]
-    dist_grid[start_row][start_col] = 0
-
-    Q = deque([(start_row, start_col)])
+    Q = deque([(end_row, end_col)])
     while Q:
         curr_row, curr_col = Q.popleft()
-
-        if curr_row == mr and curr_col == mc:
+        if curr_row == m_row and curr_col == m_col:
             break
-
         for d in range(4):
             next_row, next_col = curr_row + dr[d], curr_col + dc[d]
-            if not in_range(next_row, next_col) or dist_grid[next_row][next_col] != -1:
+            if not in_range(next_row, next_col) or grid[next_row][next_col]:
                 continue
-            if grid[next_row][next_col] == 1:
+            if visit_grid[next_row][next_col] != -1:
                 continue
-            dist_grid[next_row][next_col] = dist_grid[curr_row][curr_col]+1
+            visit_grid[next_row][next_col] = visit_grid[curr_row][curr_col]+1
             Q.append((next_row, next_col))
 
-    return dist_grid
+    return visit_grid
 
 
 def m_move():
     for d in range(4):
-        next_row, next_col = mr+dr[d], mc+dc[d]
+        next_row, next_col = m_row + dr[d], m_col + dc[d]
         if not in_range(next_row, next_col):
             continue
-        if dist_grid[next_row][next_col] == dist_grid[mr][mc]-1:
+        if dist_grid[next_row][next_col] == dist_grid[m_row][m_col]-1:
             return next_row, next_col
 
 
-# 돌로 된 전사의 수 반환
-def see():
-    watch_grid = [[[0] * N for _ in range(N)] for _ in range(4)]
-    max_cnt, max_direction = 0, 0
+def watch():
+    watch_grid = [[[False] * N for _ in range(N)] for _ in range(4)]
+    max_stone, max_dir = 0, 0
+
     for d in range(4):
-        curr_cnt = 0
-        visited = [[0] * N for _ in range(N)]
+        visited = [[False] * N for _ in range(N)]
+        visited[m_row][m_col] = True
+        curr_stone = 0
 
-        Q = deque([(mr, mc, 0)])
+        Q = deque([(m_row, m_col, 0)])
         while Q:
-            curr_row, curr_col, curr_status = Q.popleft()
+            curr_row, curr_col, curr_state = Q.popleft()
 
-            for delta_row, delta_col in deltas[d][curr_status]:
-
+            for order in select_lst[curr_state]:
+                delta_row, delta_col = delta_lst[d][order]
                 next_row, next_col = curr_row + delta_row, curr_col + delta_col
                 if not in_range(next_row, next_col) or visited[next_row][next_col]:
                     continue
 
                 visited[next_row][next_col] = True
-                # 용사면 status 유지한 채로 appendleft
-                if curr_status:
-                    Q.appendleft((next_row, next_col, curr_status))
-                # 메두사 시선이면..
+                if curr_state:
+                    Q.appendleft((next_row, next_col, curr_state))
                 else:
-                    watch_grid[d][next_row][next_col] = 1
-                    # 용사가 있으면 먼저 봐줘야 하므로 appendleft
-                    if w_grid[next_row][next_col]:
-                        curr_cnt += w_grid[next_row][next_col]
+                    watch_grid[d][next_row][next_col] = True
+                    if (next_row, next_col) in w_dict:
+                        curr_stone += w_dict[(next_row, next_col)]
                         if dr[d]:
-                            status = 1 if next_col < mc else 2 if next_col == mc else 3
+                            next_state = 1 if next_col < m_col else 2 if next_col == m_col else 3
                         else:
-                            status = 1 if next_row < mr else 2 if next_row == mr else 3
-                        Q.appendleft((next_row, next_col, status))
-                    # 아니면 그냥 append
+                            next_state = 1 if next_row < m_row else 2 if next_row == m_row else 3
+                        Q.appendleft((next_row, next_col, next_state))
                     else:
-                        Q.append((next_row, next_col, 0))
+                        Q.append((next_row, next_col, curr_state))
 
-        if curr_cnt > max_cnt:
-            max_cnt, max_direction = curr_cnt, d
+        if max_stone < curr_stone:
+            max_stone = curr_stone
+            max_dir = d
 
-    return max_cnt, watch_grid[max_direction]
+    return watch_grid[max_dir], max_stone
 
 
-# 이동 거리의 합. + 공격한 전사의 수 반환
 def w_move():
-    new_w_grid = [[0] * N for _ in range(N)]
-    attack_cnt, move_cnt = 0, 0
-    for row in range(N):
-        for col in range(N):
-            if not w_grid[row][col]:
+    new_dict = dict()
+    total_move, total_attack = 0, 0
+    for (row, col), num in w_dict.items():
+        if watch_grid[row][col]:
+            new_dict[(row, col)] = new_dict.get((row, col), 0) + num
+            continue
+
+        curr_row, curr_col = row, col
+        curr_dist = get_dist((curr_row , curr_col), (m_row, m_col))
+
+        # 1차 이동 시도.
+        keep_going = False
+        for d in range(4):
+            next_row, next_col = curr_row + dr[d], curr_col + dc[d]
+            if not in_range(next_row, next_col) or watch_grid[next_row][next_col]:
                 continue
 
-            if watch_grid[row][col]:
-                new_w_grid[row][col] += w_grid[row][col]
+            next_dist = get_dist((next_row, next_col), (m_row, m_col))
+            if curr_dist <= next_dist:
                 continue
 
-            curr_dist = get_dist((row, col), (mr, mc))
-            for d in range(4):
-                next_row, next_col = row + dr[d], col + dc[d]
-                if not in_range(next_row, next_col):
-                    continue
-
-                next_dist = get_dist((next_row, next_col), (mr, mc))
-                if watch_grid[next_row][next_col] or next_dist >= curr_dist:
-                    continue
-
-                move_cnt += w_grid[row][col]
-                if next_dist == 0:
-                    attack_cnt += w_grid[row][col]
-                else:
-                    for d_ in range(2, 6):
-                        nnr, nnc = next_row + dr[d_%4], next_col + dc[d_%4]
-                        if not in_range(nnr, nnc):
-                            continue
-
-                        nnd = get_dist((nnr, nnc), (mr, mc))
-                        if watch_grid[nnr][nnc] or nnd >= next_dist:
-                            continue
-
-                        move_cnt += w_grid[row][col]
-                        if nnd == 0:
-                            attack_cnt += w_grid[row][col]
-                        else:
-                            new_w_grid[nnr][nnc] += w_grid[row][col]
-
-                        break
-
-                    else:
-                        new_w_grid[next_row][next_col] += w_grid[row][col]
-
-                break
-
+            total_move += num
+            if next_row == m_row and next_col == m_col:
+                total_attack += num
             else:
-                new_w_grid[row][col] += w_grid[row][col]
+                keep_going = True
+                curr_row, curr_col = next_row, next_col
+            break
+        else:
+            new_dict[(curr_row, curr_col)] = new_dict.get((curr_row, curr_col), 0) + num
 
-    return attack_cnt, move_cnt, new_w_grid
+        if not keep_going:
+            continue
+
+        curr_dist = get_dist((curr_row, curr_col), (m_row, m_col))
+        for d in range(-2, 2):
+            next_row, next_col = curr_row + dr[d], curr_col + dc[d]
+            if not in_range(next_row, next_col) or watch_grid[next_row][next_col]:
+                continue
+
+            next_dist = get_dist((next_row, next_col), (m_row, m_col))
+            if curr_dist <= next_dist:
+                continue
+
+            total_move += num
+            if next_row == m_row and next_col == m_col:
+                total_attack += num
+            else:
+                curr_row, curr_col = next_row, next_col
+                new_dict[(curr_row, curr_col)] = new_dict.get((curr_row, curr_col), 0) + num
+            break
+        else:
+            new_dict[(curr_row, curr_col)] = new_dict.get((curr_row, curr_col), 0) + num
+
+    return new_dict, total_move, total_attack
 
 
-def print_grid(what, grid):
-    print(f'----{what}_grid----')
-    for row in grid:
+def get_state():
+    temp = [[0] * N for _ in range(N)]
+    for (row, col), num in w_dict.items():
+        temp[row][col] = num
+
+    print(f'----w_grid----')
+    for row in temp:
+        print(*row)
+    print()
+    print(f'm_pos:', m_row, m_col)
+    print(f'----watch_grid----')
+    for row in watch_grid:
         print(*row)
 
 
-# ==============================================
+# ======================================================================
 # 세팅
 
 N, M = map(int, input().split())
-mr, mc, er, ec = map(int, input().split())
-
-w_grid = [[0] * N for _ in range(N)]
-w_info = list(map(int, input().split()))
-for i in range(M):
-    ar, ac = w_info[i<<1], w_info[i<<1|1]
-    w_grid[ar][ac] += 1
-
+m_row, m_col, end_row, end_col = map(int, input().split())
+w_pos = list(map(int, input().split()))
 grid = [list(map(int, input().split())) for _ in range(N)]
-dist_grid = make_dist_grid()
+dist_grid = get_dist_grid()
 
-# ==============================================
+w_dict = dict()
+for i in range(M):
+    w_row, w_col = w_pos[i<<1], w_pos[i<<1|1]
+    w_dict[(w_row, w_col)] = w_dict.get((w_row, w_col), 0) + 1
+
+# =======================================================================
 # 실행부
 
-if dist_grid[mr][mc] == -1:
+if dist_grid[m_row][m_col] == -1:
     print(-1)
 else:
-    while mr != er or mc != ec:
-        # 1. 메두사 움직이기.
-        mr, mc = m_move()
-        w_grid[mr][mc] = 0
-        if mr == er and mc == ec:
+    while True:
+        # 1. 메두사 이동
+        m_row, m_col = m_move()
+
+        # 1-1. 도착 확인
+        if m_row == end_row and m_col == end_col:
             print(0)
             break
 
-        # 2. 시선처리
-        rock_cnt, watch_grid = see()
+        # 1-2. 전사 공격
+        if (m_row, m_col) in w_dict:
+            w_dict.pop((m_row, m_col))
 
-        # 3. 전사들 움직임.
-        attack_cnt, move_cnt, w_grid = w_move()
+        # 2. 시선 처리
+        watch_grid, stone = watch()
+
+        # 3. 전사 이동
+        w_dict, dist, attack = w_move()
 
         # 4. 정답 출력
-        print(move_cnt, rock_cnt, attack_cnt)
+        print(dist, stone, attack)
