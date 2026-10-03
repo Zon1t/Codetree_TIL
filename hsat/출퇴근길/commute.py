@@ -1,61 +1,83 @@
+# [] /
+# 내가 가는 경로가 목적지에 도착한다는 것에 대한 보장을 어떻게 할 수 있을까
+# 단순히 출발지, 목적지에서 bfs를 시작하면 그게 경로 위에 존재하는 노드들을 방문했다고 볼 수 있는건가
+# dfs 메모이제이션으로 시간 안에 될라나
+
 from collections import deque
 
 N, M = map(int, input().split())
-
-data1 = [[] for _ in range(N+1)]
-data2 = [[] for _ in range(N+1)]
+data = [[] for _ in range(N+1)]
+revd = [[] for _ in range(N+1)]
 for _ in range(M):
-    s, e = map(int, input().split())
-    data1[s].append(e)
-    data2[e].append(s)
+    start, end = map(int, input().split())
+    data[start].append(end)
+    revd[end].append(start)
 
 start, end = map(int, input().split())
 
+pick = 1
 visited = [0] * (N+1)
-first_set = set()
-Q = deque([(start, 1), (end, 2)])
+visited[end] = pick
+
+Q = deque([end])
 while Q:
-    node, bit = Q.popleft()
+    curr_node = Q.popleft()
 
-    for next_node in (data1[node] if bit == 1 else data2[node]):
-        if visited[next_node]&bit:
-            if next_node not in first_set and bit==1 and next_node not in [start, end]:
-                first_set.add(next_node)
+    for next_node in revd[curr_node]:
+        if visited[next_node] & pick:
             continue
+        visited[next_node] |= pick
+        Q.append(next_node)
 
-        if bit == 1 and next_node == end:
+pick = 2
+visited[start] |= pick
+
+Q.append(start)
+while Q:
+    curr_node = Q.popleft()
+
+    if curr_node == end:
+        continue
+
+    for next_node in data[curr_node]:
+        if visited[next_node] & pick:
             continue
+        visited[next_node] |= pick
+        Q.append(next_node)
 
-        visited[next_node] |= bit
-        Q.append((next_node, bit))
+first_set = set([node for node in range(1, N+1) if visited[node] == 3])
 
-for node in range(1, N+1):
-    if visited[node] == 3:
-        first_set.add(node)
 
-start, end = end, start
-
+pick = 1
 visited = [0] * (N+1)
-second_set = set()
-Q = deque([(start, 1), (end, 2)])
+visited[start] = pick
+
+Q = deque([start])
 while Q:
-    node, bit = Q.popleft()
+    curr_node = Q.popleft()
 
-    for next_node in (data1[node] if bit == 1 else data2[node]):
-        if visited[next_node]&bit:
-            if next_node not in second_set and bit==1 and next_node not in [start, end]:
-                second_set.add(next_node)
+    for next_node in revd[curr_node]:
+        if visited[next_node] & pick:
             continue
+        visited[next_node] |= pick
+        Q.append(next_node)
 
-        if bit == 1 and next_node == end:
+pick = 2
+visited[end] |= pick
+
+Q.append(end)
+while Q:
+    curr_node = Q.popleft()
+
+    if curr_node == start:
+        continue
+
+    for next_node in data[curr_node]:
+        if visited[next_node] & pick:
             continue
+        visited[next_node] |= pick
+        Q.append(next_node)
 
-        visited[next_node] |= bit
-        Q.append((next_node, bit))
+second_set = set([node for node in range(1, N+1) if visited[node] == 3])
 
-second_set = set()
-for node in range(1, N+1):
-    if visited[node] == 3:
-        second_set.add(node)
-
-print(len(first_set.intersection(second_set)))
+print(len(first_set.intersection(second_set))-2)
