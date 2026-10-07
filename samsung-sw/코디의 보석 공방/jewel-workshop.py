@@ -48,13 +48,13 @@ def buy(w, v):
 def sell(idx):
     global stone_cnt
 
-    stone_cnt -= 1
     if idx not in stone_info:
         return -1
     else:
         w, v = stone_info.pop(idx)
         idx = bisect_left(stone, (w, v, 0))
         stone.pop(idx)
+        stone_cnt -= 1
         return v
 
 
@@ -70,12 +70,17 @@ def arrange(W):
 # 더 최적화할 수 있는데 일단 제출?
 def make_set(D):
     total_cnt = 0
-    for idx, (w, v, _) in enumerate(stone):
-        pos = bisect_right(stone, (w+D, INF, INF))
-        if idx+1 == pos:
-            continue
-        else:
-            total_cnt += pos-idx-1
+    right = 0
+
+    for left in range(stone_cnt):
+        if right < left + 1:
+            right = left + 1
+
+        while right < stone_cnt and stone[right][0] - stone[left][0] <= D:
+            right += 1
+
+        total_cnt += right - left - 1
+
     return total_cnt
 
 
