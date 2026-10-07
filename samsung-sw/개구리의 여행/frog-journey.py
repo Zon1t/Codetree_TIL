@@ -4,11 +4,12 @@ INF = float('inf')
 dr = [0, 1, 0, -1]
 dc = [1, 0, -1, 0]
 
-delta_grid = {1: [None, None, 5, 14, 30, 55],
-              2: [None, None, None, 10, 26, 51],
-              3: [None, None, None, None, 17, 42],
-              4: [None, None, None, None, None, 26]}
-
+delta_grid = [[0, 0, 0, 0, 0, 0],
+              [0, 1, 5, 14, 30, 55],
+              [0, 2, 1, 10, 26, 51],
+              [0, 2, 2, 1, 17, 42],
+              [0, 2, 2, 2, 1, 26],
+              [0, 2, 2, 2, 2, 1]]
 
 def in_range(row, col):
     return 0 <= row < N and 0 <= col < N
@@ -37,7 +38,7 @@ def dijkstra(start_row, start_col, end_row, end_col):
                 if grid[next_row][next_col] == 'S':
                     continue
 
-                next_dist = curr_dist + (1 if next_power == curr_power else 2 if next_power < curr_power else delta_grid[curr_power][next_power])
+                next_dist = curr_dist + delta_grid[curr_power][next_power]
                 if next_dist < dist[next_row][next_col][next_power]:
                     dist[next_row][next_col][next_power] = next_dist
                     heapq.heappush(hq, (next_dist, next_power, next_row, next_col))
