@@ -1,12 +1,18 @@
-# 시작 11:53
-# 나잇대별로 정리해서 관리를 해주자.. 양분_grid 따로 만들기 이때 연산은 lazy하게
-# 1. eat. 나이만큼 양분 먹고 나이 += 1
-# 2. 죽은 바이러스들은 //2 해서 양분칸에 추가.
-# 3. 나이가 5의 배수면 번식 진행.
-# 4. 양분 업데이트.. 중요
+# 11:42
+# 1. 양분 섭취
+#       - 본인 나이만큼의 양분을 섭취. 섭취 순서는 나이가 어린 순서
+#       - 양분 섭취하면 나이 1 증가. 나이만큼 못 먹으면 죽임.
+#       - 죽은 애들은 나이//2만큼 양분화.
 
-dr = [0, 1, 1, 1, 0, -1, -1, -1]
-dc = [1, 1, 0, -1, -1, -1, 0, 1]
+# 2. 번식
+#       - 번식은 나이가 5의 배수인 애들만 진행.
+#       - 인접한 8칸에 대하여 나이가 1인 바이러스 생성
+
+# 위 과정을 반복하며 양분 grid 업데이트. 조건 빼먹지 말고 성실하게 수행하자.
+
+
+dr = [0, 1, 0, -1, 1, 1, -1, -1]
+dc = [1, 0, -1, 0, 1, -1, 1, -1]
 
 
 def in_range(row, col):
@@ -14,118 +20,84 @@ def in_range(row, col):
 
 
 def eat():
-    new_dict = dict()
-    for row, col in virus.keys():
-        threshold = yangboon_grid[row][col]+update_grid[row][col]*turn
-        already_done = False
-        add_yangboon = 0
+    new_dict = {}
+    for (row, col), age_dict in virus_dict.items():
+        threshold = yangboon_grid[row][col] + update_grid[row][col] * time
+        be_yangboon = 0
+        cant_go = False
+        for age in sorted(age_dict.keys()):
+            cnt = age_dict[age]
 
-        for age, cnt in sorted(virus[(row, col)].items()):
-
-            if already_done:
-                add_yangboon += (age//2)*cnt
+            if cant_go:
+                be_yangboon += age//2 * cnt
                 continue
 
-            if age*cnt <= threshold:
+            if age * cnt <= threshold:
+                threshold -= age * cnt
                 if (row, col) in new_dict:
-                    new_dict[(row, col)][age+1] = cnt
+                    new_dict[(row, col)][age+1] = new_dict[(row, col)].get(age+1, 0) + cnt
                 else:
                     new_dict[(row, col)] = {age+1: cnt}
-                threshold -= age*cnt
-                yangboon_grid[row][col] -= age*cnt
-                if (age+1)%5 == 0:
-                    age_5[row][col] += cnt
-            elif age > threshold:
-                add_yangboon += (age//2)*cnt
-                already_done = True
-            else:
-                max_cnt = threshold//age
 
+                if age%5 == 4:
+                    age_5[(row, col)] = age_5.get((row, col), 0) + cnt
+            elif age > threshold:
+                be_yangboon += age//2 * cnt
+                cant_go = True
+            else:
+                max_cnt = threshold // age
+                threshold -= age * max_cnt
                 if (row, col) in new_dict:
-                    new_dict[(row, col)][age+1] = max_cnt
+                    new_dict[(row, col)][age+1] = new_dict[(row, col)].get(age+1, 0) + max_cnt
                 else:
                     new_dict[(row, col)] = {age+1: max_cnt}
 
-                threshold -= age*max_cnt
-                yangboon_grid[row][col] -= age*max_cnt
-                if (age+1)%5 == 0:
-                    age_5[row][col] += max_cnt
+                if age%5 == 4:
+                    age_5[(row, col)] = age_5.get((row, col), 0) + max_cnt
 
-                add_yangboon += (age//2)*(cnt-max_cnt)
-                already_done = True
+                be_yangboon += age//2 * (cnt-max_cnt)
+                cant_go = True
 
-        yangboon_grid[row][col] += add_yangboon
+        yangboon_grid[row][col] = threshold - update_grid[row][col] * time + be_yangboon
 
     return new_dict
 
 
 def burnsick():
-    for row in range(N):
-        for col in range(N):
-            temp = 0
-            for d in range(8):
-                next_row, next_col = row + dr[d], col + dc[d]
-                if not in_range(next_row, next_col):
-                    continue
-                temp += age_5[next_row][next_col]
-
-            if temp:
-                if (row, col) in virus:
-                    virus[(row, col)][1] = temp
-                else:
-                    virus[(row, col)] = {1: temp}
-
-    for row in range(N):
-        for col in range(N):
-            age_5[row][col] = 0
-
-
-def get_answer():
-    temp = 0
-    for age_dict in virus.values():
-        temp += sum(age_dict.values())
-    return temp
-
-
-def print_grid():
-    print(f'----virus_grid----')
-    for row in range(N):
-        for col in range(N):
-            if (row, col) in virus:
-                print(virus[(row, col)], end=' ')
+    for (row, col), cnt in age_5.items():
+        for d in range(8):
+            next_row, next_col = row + dr[d], col + dc[d]
+            if not in_range(next_row, next_col):
+                continue
+            if (next_row, next_col) in virus_dict:
+                virus_dict[(next_row, next_col)][1] = virus_dict[(next_row, next_col)].get(1, 0) + cnt
             else:
-                print(0, end=' ')
-        print()
-    print(f'----yangboon_grid----')
-    for row in range(N):
-        for col in range(N):
-            print(yangboon_grid[row][col]+update_grid[row][col]*turn, end=' ')
-        print()
+                virus_dict[(next_row, next_col)] = {1: cnt}
+    age_5.clear()
 
 
-# =================================================================
-# 입력
+# ============================================================================
+# 세팅
 
-N, M, K = map(int, input().split())
+N, K, T = map(int, input().split())
 yangboon_grid = [[5] * N for _ in range(N)]
 update_grid = [list(map(int, input().split())) for _ in range(N)]
-age_5 = [[0] * N for _ in range(N)]
 
-virus = dict()
-for _ in range(M):
-    r, c, age = map(int, input().split())
-    virus[(r-1, c-1)] = {age: 1}
+virus_dict = {}
+for _ in range(K):
+    r, c, a = map(int, input().split())
+    virus_dict[(r-1, c-1)] = {a: 1}
+age_5 = {}
 
-# =================================================================
+# ============================================================================
 # 실행부
 
-for turn in range(K):
-    # 1. 양분 먹기 & 양분화
-    virus = eat()
+for time in range(T):
+    # 1. 양분 섭취
+    virus_dict = eat()
 
     # 2. 번식 진행
     burnsick()
 
-# 접답 연산
-answer = get_answer()
-print(answer)
+# 정답 출력
+print(sum([sum(age_dict.values()) for age_dict in virus_dict.values()]))
