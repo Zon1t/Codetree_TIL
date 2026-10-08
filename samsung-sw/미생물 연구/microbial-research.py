@@ -1,151 +1,145 @@
-# 미생물 연구 2차
-from collections import deque
+# 09:01 시작
 
-DEBUG = False
-def myprint(string):
-    if not DEBUG:
-        return
-    print(f"========{string}=========")
-    for row in matrix:
-        print(*row)
+# 1. 미생물 투입
+#       - 90도 돌려서 생각하면 문제 풀이하기 편할듯
+#       - grid 위에 덮어쓰면 잡아먹기 처리 가능
+#       - 영역 갈라지는 부분은 2번 과정과 함께 진행하면 될 듯.
 
-dxdy = [(1,0),  (0,1),(-1,0), (0,-1)]
-inrange = lambda x, y : bool(0<=x<N and 0<=y < N)
-def transform(r, c):
-    return N-c, r
+# 2. 배양 용기 이동
+#       - group 지어가며 상대 좌표 기록하기.
+#       - 개수 기록 및 갈리지는거 체크.
+#       - 행작 - 열작 우선순위 잘 지키기.
+#       - 옮기는 것이 불가능한 경우 버리기.
+
+# 3. 실험 결과 기록
+#       - 개수는 잘 저장되어 있을 것이고..
+#       - 인접 체크를 그냥 한 번 더 순회? 아니면 2번 단계 옮기면서 체크?
+#       - 그냥 옮기면서 체크하는게 좋지 않나 싶다.
 
 
-def bfs(cur_num):
-    removed = set()
-    coords = [set() for _ in range(cur_num+1)]
-    criteria = [(-1,-1) for _ in range(cur_num + 1)]
-    visited = [[0]*N for _ in range(N)]
-    q = deque()
+dr = [0, 1, 0, -1]
+dc = [1, 0, -1, 0]
 
-    rm_flag = False
-    for x in range(N):
-        for y in range(N):
-            if not matrix[x][y] or visited[x][y]:
+
+def in_range(row, col):
+    return 0 <= row < N and 0 <= col < N
+
+
+def check(pos, row, col, grid):
+    for delta_row, delta_col in pos:
+        check_row, check_col = row + delta_row, col + delta_col
+        if not in_range(check_row, check_col) or grid[check_row][check_col]:
+            return False
+    return True
+
+
+def move():
+    visited = [[False] * N for _ in range(N)]
+    removed_set = set()
+    pos_info = dict()
+
+    for row in range(N):
+        for col in range(N):
+            if not grid[row][col] or visited[row][col]:
                 continue
-            num = matrix[x][y]
-            if num in removed:
-                rm_flag = True
 
-            if coords[num]: # 두조각 됨
-                rm_flag = True
-                removed.add(num)
-                rx, ry = criteria[num]
-                for rm_x, rm_y in coords[num]:
-                    nx, ny = rm_x + rx, rm_y + ry
-                    matrix[nx][ny] = 0
-                coords[num].clear()
-            else:
-                criteria[num] = (x,y) #상대좌표를 위한 시작점
-            q.append((x,y))
-            visited[x][y] = 1
-            while q:
-                cur_x, cur_y = q.popleft()
+            curr_idx = grid[row][col]
+            if curr_idx in removed_set:
+                continue
 
-                if rm_flag:
-                    matrix[cur_x][cur_y] = 0
-                else:
-                    rx, ry = criteria[num]
-                    coords[num].add((cur_x - rx, cur_y- ry))
-                for dx, dy in dxdy:
-                    nx, ny = cur_x + dx, cur_y + dy
-                    if not inrange(nx,ny) or visited[nx][ny]:
+            if curr_idx in pos_info:
+                pos_info.pop(curr_idx)
+                removed_set.add(curr_idx)
+                continue
+
+            pos = []
+
+            lst = [(row, col)]
+            visited[row][col] = True
+            pointer, cnt = 0, 1
+            while pointer < cnt:
+                curr_row, curr_col = lst[pointer]
+                pointer += 1
+
+                for d in range(4):
+                    next_row, next_col = curr_row + dr[d], curr_col + dc[d]
+                    if not in_range(next_row, next_col) or visited[next_row][next_col]:
                         continue
-                    if matrix[nx][ny] == num:
-                        q.append((nx,ny))
-                        visited[nx][ny] = 1
-            
-            rm_flag = False
+                    if grid[next_row][next_col] != curr_idx:
+                        continue
 
-    return coords
+                    visited[next_row][next_col] = True
+                    lst.append((next_row, next_col))
+                    pos.append((next_row-row, next_col-col))
+                    cnt += 1
 
-def move(coords, cur_num):
-    global  matrix
-    cand = []
-    for num in range(1, cur_num+1):
-        if len(coords[num]) == 0:
-            continue
-        cand.append((- len(coords[num]), num ))
+            pos_info[curr_idx] = (cnt, curr_idx, pos)
+    ordered_lst = list(pos_info.values())
+    ordered_lst.sort(key=lambda x: (-x[0], x[1]))
 
-    cand.sort()
-    new_ma = [[0]*N for _ in range(N)]
-
-    alive = [0 for _ in range(cur_num + 1)]
-    for _, num in cand:
-        that_coord = (-1,-1)
-        for s_y in range(N):
-            for s_x in range(N-1, -1, -1):
-                for rx, ry in coords[num]:
-                    nx, ny = s_x + rx, s_y + ry
-                    if not inrange(nx,ny) or new_ma[nx][ny]:
-                        break
-                else:
-                    that_coord = (s_x, s_y)
+    new_grid = [[0] * N for _ in range(N)]
+    for _, curr_idx, pos in ordered_lst:
+        done = False
+        for row in range(N):
+            for col in range(N):
+                if new_grid[row][col]:
+                    continue
+                if check(pos, row, col, new_grid):
+                    new_grid[row][col] = curr_idx
+                    for delta_row, delta_col in pos:
+                        new_grid[row+delta_row][col+delta_col] = curr_idx
+                    done = True
                     break
-            if that_coord != (-1,-1):
+            if done:
                 break
-
-        if that_coord != (-1,-1):
-            s_x, s_y = that_coord
-            for rx, ry in coords[num]:
-                nx, ny = s_x + rx, s_y + ry
-                new_ma[nx][ny] = num
-            alive[num] = len(coords[num])
-
-    matrix = new_ma
-    return alive
+    return new_grid, pos_info
 
 
+def write():
+    temp = 0
+    check_pair = set()
+    for row in range(N):
+        for col in range(N):
+            if not grid[row][col]:
+                continue
+            for d in range(2):
+                next_row, next_col = row + dr[d], col + dc[d]
+                if not in_range(next_row, next_col) or not grid[next_row][next_col]:
+                    continue
+                if grid[row][col] == grid[next_row][next_col]:
+                    continue
+
+                min_idx, max_idx = min(grid[row][col], grid[next_row][next_col]), max(grid[row][col], grid[next_row][next_col])
+                if (min_idx, max_idx) in check_pair:
+                    continue
+
+                temp += info[min_idx][0] * info[max_idx][0]
+                check_pair.add((min_idx, max_idx))
+    return temp
+
+
+# ================================================================
+# 세팅
 
 N, Q = map(int, input().split())
+grid = [[0] * N for _ in range(N)]
+commands = [map(int, input().split()) for _ in range(Q)]
+answer = []
 
-matrix = [[0]*N for _ in range(N)]
+# ================================================================
+# 실행부
 
+for idx, (start_row, start_col, end_row, end_col) in enumerate(commands):
+    # 1. 미생물 투입.
+    for row in range(start_row, end_row):
+        for col in range(start_col, end_col):
+            grid[row][col] = idx+1
 
-for num in range(1,Q +1):
-    r1, c1, r2, c2 = map(int, input().split())
-    x1, y1 = transform(r1, c1)
-    x2, y2 = transform(r2, c2)
+    # 2. 배양 용기 이동
+    grid, info = move()
 
-    if DEBUG:
-        print(f'for {num}')
-        print(x1, y1)
-        print(x2, y2)
-    for x in range(x2, x1):
-        for y in range(y1, y2):
-            matrix[x][y] = num
+    # 3. 실험 결과 기록
+    answer.append(str(write()))
 
-    myprint(f"after inject {num}")
-
-    coords  = bfs(num)
-    myprint(f"after bfs ")
-
-    alive = move(coords, num)
-
-    myprint(f"after move ")
-
-    answer = 0
-    count_set = set()
-    for x in range(N):
-        for y in range(N):
-            if not matrix[x][y]:
-                continue
-            num1 = matrix[x][y]
-            for dx, dy in dxdy[:2]:
-                nx,ny = x+dx, y + dy
-                if not inrange(nx,ny) or not matrix[nx][ny]:
-                    continue
-                num2 = matrix[nx][ny]
-                if num1 == num2:
-                    continue
-                minnum = min(num1, num2)
-                maxnum = max(num1, num2)
-                if (minnum, maxnum) in count_set:
-                    continue
-                answer += alive[num1]* alive[num2]
-                count_set.add((minnum, maxnum))
-    print(answer)
+# 정답 출력
+print('\n'.join(answer))
