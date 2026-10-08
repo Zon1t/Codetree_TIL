@@ -29,6 +29,8 @@ import sys; input = sys.stdin.readline
 
 
 class Node:
+    __slots__ = ('idx', 'belt_num', 'weight', 'prev_node', 'next_node')
+    
     def __init__(self, idx, belt_n, weight, prev_node=None, next_node=None):
         self.idx = idx
         self.belt_num = belt_n
