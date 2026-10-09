@@ -1,121 +1,105 @@
+# []/
+# 1. 택배 투입.
+#       - 바로 아래칸 width만큼 확인해가며 떨구면 된다.
+#       - 떨어지는 로직은 재사용할 것으로 보이니 적절하게 구성
+
+# 2. 택배 하차
+#       - 좌측, 우측을 번갈아가며 택배를 하차시킴.
+#       - 하차 여부 판단이 먼저.
+#       - 바로 상단에 있는 애들도 떨구기(연쇄)
+
+
 class Box:
-    def __init__(self, num, h, w, r, c):
-        self.num = num
-        self.height = h
-        self.width = w
-        self.row = r
-        self.col = c
-        self.is_out = False
-        self.drop()
-        self.draw()
+    def __init__(self, idx, height, width, col):
+        self.idx = idx
+        self.height = height
+        self.width = width
+        self.col = col
+        self.row = self.drop()
+        self.update(self.idx)
+        self.out = False
 
-    def get_data(self):
-        return self.row, self.col, self.height, self.width
-
-    def draw(self):
-        for row in range(self.row, self.row+self.height):
-            for col in range(self.col, self.col+self.width):
-                grid[row][col] = self.num
-
-    def erase(self):
-        for row in range(self.row, self.row+self.height):
-            for col in range(self.col, self.col+self.width):
-                grid[row][col] = 0
-
-    def drop(self):
-        check_row = self.row+self.height
-        while True:
-            for col in range(self.col, self.col+self.width):
-                if check_row >= N or grid[check_row][col]:
-                    self.row = check_row-self.height
-                    return
+    def drop(self, start_row=0):
+        check_row = start_row + self.height
+        while check_row < N:
+            for col in range(self.col, self.col + self.width):
+                if grid[check_row][col]:
+                    return check_row - self.height
             check_row += 1
+        return check_row - self.height
+
+    def update(self, value):
+        for row in range(self.row, self.row+self.height):
+            for col in range(self.col, self.col+self.width):
+                grid[row][col] = value
 
     def check_above(self):
-        check_gravity = set()
-        check_row = self.row-1
-        if 0 <= check_row:
+        check_row, check_set = self.row-1, set()
+        if check_row >= 0:
             for col in range(self.col, self.col+self.width):
                 if grid[check_row][col]:
-                    check_gravity.add(grid[check_row][col])
-        return check_gravity
+                    check_set.add(grid[check_row][col])
+        return check_set
 
-    def check(self, is_right):
-        curr_col = self.col + (self.width if is_right else -1)
-        lower = self.row+self.height-1      # 아래만 확인하면 되더라.
-        while True:
-            if curr_col < 0 or curr_col >= N:
-                return True
-
-            if grid[lower][curr_col]:
+    def check_side(self, is_right):
+        check_row = self.row + self.height - 1
+        for col in (range(self.col-1, -1, -1) if not is_right else range(self.col+self.width, N)):
+            if grid[check_row][col]:
                 return False
-
-            curr_col += 1 if is_right else -1
+        return True
 
     def get_out(self):
-        self.erase()
-        self.is_out = True
+        check_set = self.check_above()
+        self.update(0)
+        self.out = True
+
+        while True:
+            if not check_set:
+                break
+
+            new_check = set()
+            for box_idx in check_set:
+                curr_box = box_info[box_idx]
+
+                update_row = curr_box.drop(curr_box.row)
+                if curr_box.row == update_row:
+                    continue
+
+                new_check.update(curr_box.check_above())
+
+                curr_box.update(0)
+                curr_box.row = update_row
+                curr_box.update(curr_box.idx)
+            check_set = new_check
 
 
-def print_grid():
-    print(f'----grid----')
-    for row in grid:
-        print(*row)
-
-
-# =============================================================
+# ====================================================================
 # 세팅
 
 N, M = map(int, input().split())
-grid = [[0]*N for _ in range(N)]
+grid = [[0] * N for _ in range(N)]
 
-boxes = []
-for idx in range(M):
+box_info = dict()
+indexes = []
+for _ in range(M):
     k, h, w, c = map(int, input().split())
-    boxes.append(Box(k, h, w, 0, c-1))
+    box_info[k] = Box(k, h, w, c-1)
+    indexes.append(k)
 
-boxes.sort(key=lambda x: x.num)
-
-num_to_idx = {box.num: idx for idx, box in enumerate(boxes)}
+indexes.sort()
 answer = []
 
-# =============================================================
+# ====================================================================
 # 실행부
 
 for turn in range(M):
-    for box in boxes:
-        if box.is_out:
+    for box_idx in indexes:
+        if box_info[box_idx].out:
             continue
 
-        # 치울 수 있는지 체크!
-        can_erase = box.check(turn%2)
-        if not can_erase:
-            continue
+        if box_info[box_idx].check_side(turn%2):
+            box_info[box_idx].get_out()
+            answer.append(str(box_idx))
+            break
 
-        # 이때 항상 내 위에 있는 박스들에 대해서 생각해야 한다.
-        box.get_out()
-        drop_set = box.check_above()
-        while drop_set:
-            new_drop_set = set()
-            for box_num in drop_set:
-                # 현재 박스 찾기
-                box_idx = num_to_idx[box_num]
-                curr_box = boxes[box_idx]
-
-                # 추가로 체크할 박스 업데이트
-                need_check = curr_box.check_above()
-                new_drop_set |= need_check
-
-                # 박스 지우고, 떨구고, 그리기
-                curr_box.erase()
-                curr_box.drop()
-                curr_box.draw()
-
-            # 드롭셋 업데이트
-            drop_set = new_drop_set
-
-        answer.append(str(box.num))
-        break
-
-# 정답 출력
 print('\n'.join(answer))
