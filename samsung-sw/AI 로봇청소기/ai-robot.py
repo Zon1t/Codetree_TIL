@@ -1,47 +1,29 @@
-''' AI 로봇청소기 / 20260930 / 체감 난이도 : 골드 4
-소요 시간 : 47분 / 시도 : 1회 / 실행 시간 : 144ms / 메모리 : 20MB
+# []/
+# 10:15
 
-타임 라인 : 구상(15분) - 구현(25분) - 검증(7분)
+# 격자 1-based 기억하기 **
 
+# 1. 청소기의 이동
+#       - 순서대로 이동함에 유의
+#       - 이동 거리가 가장 가까운 오염된 격자로 이동하기.
+#       - 물건이 있거나 청소기가 있는 경우 지나갈 수 없음.
+#       - 여러 개일 경우 행작 - 열작
 
-[구상]
-    - 처음에 클래스를 세팅하다가, 그냥 함수로 하는 게 익숙해서 그런가 땡기지는 않았다. 곧바로 수정해
-    서 구상을 이어나갔다.
-    - 주석 부분 수정을 꽤나 많이 했던 것 같다. 격자마다 최대 20만큼 청소 가능하다는 조건을 빼먹을까
-    혹시 몰라 적어주었고, 그냥 내가 착각할 만한 부분들, 문제 조건들 위주로 작성해주었다.
+# 2. 청소
+#       - 순서대로 청소함에 유의
+#       - 'ㅗ' 모양으로 청소 진행.
+#       - 바라보는 방향의 경우 가장 청소를 많이 할 수 있는 방향으로
+#       - 그러한 방향이 여러 개인 경우 우-하-좌-상 우선순위를 가짐
+#       - 한 칸마다 ""최대 20""만큼 청소 가능함에 유의
 
-[구현]
-    - 묘수가 이것저것 떠오르긴 했는데, 금방금방 떨쳐내고 건실한 풀이를 이어나갈 수 있었다. 이건 확실
-    히 잘한 부분 같다.
-    - 변수명을 나름 고민하고 넘어갔었는데 d <-> clean_d를 잘못 적는다거나, 초기 세팅에서 cleaner
-    grid를 -1로 초기화를 했었는데, 해당 부분을 잊고 그냥 0으로 지워주는 등 실수가 있었다. 다행히 구
-    현 과정에서 곧바로 찾아 수정할 수 있었다.
-    - move를 안하는 경우를 생각 못 했었다! 격자마다 최대 20만큼만 청소 가능하다 보니, 현 위치에 먼
-    지가 남아있는 경우도 분명 존재한다. 확산도 있고.. 2번 테케 디버깅 과정에서 꽤나 오랜 시간을 투자
-    해 발견할 수 있었다. 예전에도 시작 지점 == 도착 지점인 문제에서 해당 부분을 놓친 적이 있었는데,
-    반성해야 한다.
+# 3. 먼지 축적
+#       - '먼지가 있는' 칸에 5씩 더해주기
 
-[검증]
-    - 문제 <-> 주석 <-> 코드 과정을 계속 거쳤다. 테케 디버깅을 마친 이후기도 하고, 각 로직 별로 구
-    현 때 재차 확인했어서 크게 문제될 구석은 없다고 판단했다.
+# 4. 먼지 확산
+#       - 주변 4방향 격자의 합을 10으로 나눈 값만큼 확산
+#       - 확산은 동시에 일어남에 유의
 
-* 시작하고 바로 끝나는 경우 잊지 말고 체크하기.
-'''
-
-# 전형적인 시키는거 잘하면 풀 수 있는 문제 같다. 델타 세팅해서 접근하면 될듯?
-# 1. move : 가장 가까운 오염된 격자로 이동하기.
-#       - 물건이 있으면 이동X
-#       - 행작, 열작 + 오염된 정도는 상관 없음에 유의하자.
-# 2. clean : ㅗ 모양으로 청소 가능. 바라보는 방향은 선택이 가능하다.
-#       - 가장 먼지량 많은 게 우선
-#       - 그 방향이 여러개인 경우 오-아-왼-위 우선순위를 가짐.
-#       - 청소는 청소기마다 순서대로 진행.
-#       - 격자마다 최대 20.
-# 3. accumulate : 먼지 축적. 먼지가 있는 모든 격자에 5씩 추가.
-# 4. spread : 먼지 확산. 인접 네 방향 먼지량 합을 10으로 나눈만큼 확산됨.
-#       - 깨끗한 격자에서만 "동시" 확산
-# 먼지량 합을 매턴 출력하자.
-
+# 5. 각 라운드마다 총 먼지의 합 출력하면 됨.
 
 from collections import deque
 
@@ -53,17 +35,16 @@ def in_range(row, col):
     return 0 <= row < N and 0 <= col < N
 
 
-def move(idx):
-    start_row, start_col = cleaner[idx]
-    cleaner_grid[start_row][start_col] = -1
-
+def move(cleaner_idx):
+    start_row, start_col = cleaner[cleaner_idx]
     if grid[start_row][start_col] > 0:
-        return start_row, start_col
+        return
 
     visited = [[False] * N for _ in range(N)]
     visited[start_row][start_col] = True
 
-    min_pos = (N, N)
+    target = (N, N)
+
     Q = deque([(start_row, start_col)])
     while Q:
         for _ in range(len(Q)):
@@ -72,57 +53,50 @@ def move(idx):
                 next_row, next_col = curr_row + dr[d], curr_col + dc[d]
                 if not in_range(next_row, next_col) or grid[next_row][next_col] == -1:
                     continue
-                if visited[next_row][next_col] or cleaner_grid[next_row][next_col] != -1:
+                if visited[next_row][next_col] or cleaner_grid[next_row][next_col]:
                     continue
 
                 visited[next_row][next_col] = True
                 Q.append((next_row, next_col))
 
-                if grid[next_row][next_col] > 0:
-                    min_pos = min((next_row, next_col), min_pos)
+                if grid[next_row][next_col]:
+                    target = min(target, (next_row, next_col))
 
-        if min_pos[0] != N:
-            return min_pos
-    
-    # 못 가면 가만히 있기.    
-    return start_row, start_col
+        if target[0] != N:
+            break
+
+    if target[0] == N:
+        return
+
+    cleaner[cleaner_idx] = target
+    target_row, target_col = target
+    cleaner_grid[start_row][start_col] = 0
+    cleaner_grid[target_row][target_col] = cleaner_idx
 
 
-def find_dir(idx):
-    curr_row, curr_col = cleaner[idx]
-    curr_max, max_dir = -1, -1
+def clean(cleaner_idx):
+    curr_row, curr_col = cleaner[cleaner_idx]
+    max_num, max_d = 0, 0
     for d in range(4):
-        can_clean = 0
+        temp = 0
         for clean_d in range(4):
-            # 등 뒤는 청소할 수 없음
-            if clean_d == (d + 2) % 4:
+            if d == (clean_d + 2) % 4:
                 continue
-
             next_row, next_col = curr_row + dr[clean_d], curr_col + dc[clean_d]
             if not in_range(next_row, next_col) or grid[next_row][next_col] < 1:
                 continue
+            temp += min(20, grid[next_row][next_col])
 
-            can_clean += min(20, grid[next_row][next_col])
-        if curr_max < can_clean:
-            curr_max = can_clean
-            max_dir = d
+        if max_num < temp:
+            max_num, max_d = temp, d
 
-    return max_dir
-
-
-def clean(idx):
-    curr_row, curr_col = cleaner[idx]
     grid[curr_row][curr_col] -= min(20, grid[curr_row][curr_col])
-
-    clean_dir = find_dir(idx)
     for d in range(4):
-        if d == (clean_dir + 2) % 4:
+        if d == (max_d + 2) % 4:
             continue
-
         next_row, next_col = curr_row + dr[d], curr_col + dc[d]
         if not in_range(next_row, next_col) or grid[next_row][next_col] < 1:
             continue
-
         grid[next_row][next_col] -= min(20, grid[next_row][next_col])
 
 
@@ -137,74 +111,65 @@ def spread():
     update_grid = [[0] * N for _ in range(N)]
     for row in range(N):
         for col in range(N):
-            if grid[row][col] != 0:
+            if grid[row][col]:
                 continue
 
-            total = 0
+            temp = 0
             for d in range(4):
                 next_row, next_col = row + dr[d], col + dc[d]
                 if not in_range(next_row, next_col) or grid[next_row][next_col] < 1:
                     continue
-                total += grid[next_row][next_col]
-
-            update_grid[row][col] += total // 10
+                temp += grid[next_row][next_col]
+            update_grid[row][col] += temp // 10
 
     for row in range(N):
         for col in range(N):
             grid[row][col] += update_grid[row][col]
 
 
-def get_answer():
-    total = 0
-    for row in range(N):
-        for col in range(N):
-            if grid[row][col] < 1:
-                continue
-            total += grid[row][col]
-    return total
+def get_sum():
+    return sum([grid[row][col] for row in range(N) for col in range(N) if grid[row][col] > 0])
 
 
-def print_grid():
-    for idx in range(K):
-        print(f'----idx: {idx+1}----')
-        print(*cleaner[idx])
-    print(f'----grid----')
-    for row in grid:
-        print(*row)
-
-
-# =============================================================
+# =====================================================================
 # 세팅
 
-N, K, L = map(int, input().split())
+N, K, T = map(int, input().split())
 grid = [list(map(int, input().split())) for _ in range(N)]
 
-cleaner = []
-cleaner_grid = [[-1] * N for _ in range(N)]
-for i in range(K):
-    r, c = map(lambda x: int(x)-1, input().split())
-    cleaner.append((r, c))
-    cleaner_grid[r][c] = i
+cleaner_grid = [[0] * N for _ in range(N)]
+cleaner = [None] * (K+1)
+for idx in range(1, K+1):
+    ai_row, ai_col = map(lambda x: int(x)-1, input().split())
+    cleaner[idx] = (ai_row, ai_col)
+    cleaner_grid[ai_row][ai_col] = idx
 
-# ==============================================================
+answer = []
+
+# =====================================================================
 # 실행부
 
-for _ in range(L):
-    # 1. 청소기 움직이기.
-    for idx in range(K):
-        nr, nc = move(idx)
-        cleaner[idx] = (nr, nc)
-        cleaner_grid[nr][nc] = idx
+for _ in range(T):
+    # 1. 청소기 무빙
+    for idx in range(1, K+1):
+        move(idx)
 
-    # 2. 청소하기.
-    for idx in range(K):
+    # 2. 청소하기
+    for idx in range(1, K+1):
         clean(idx)
 
     # 3. 먼지 축적
     accumulate()
 
-    # 4. 먼지 확산.
+    # 4. 먼지 확산
     spread()
 
-    # 5. 정답 출력
-    print(get_answer())
+    # 5. 출력
+    curr_sum = get_sum()
+    answer.append(str(curr_sum))
+
+    # 조기 종료 체크
+    if not curr_sum:
+        break
+
+print('\n'.join(answer))
