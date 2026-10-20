@@ -3,9 +3,6 @@ public class Main {
         // Please write your code here.
         int weight = 13;
         double g = 0.165;
-        System.out.print(weight + " * ");
-        System.out.printf("%.6f", g);
-        System.out.print(" = ");
-        System.out.printf("%.6f", weight*g);
+        System.out.printf("%d * %.6f = %.6f", weight, g, weight*g);
     }
 }
